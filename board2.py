@@ -60,10 +60,13 @@ class BoardFinder:
         squares = []
         for i in range (0,8):
             row = []
+            rowLabel = 8-i
             for j in range(0,8):
-                s = Square(points[i][j], points[i][j+1], points[i+1][j+1], points[i+1][j], f'{i}-{j}')
+                columnLabel = chr(97 + j)
+                s = Square(points[i][j], points[i][j+1], points[i+1][j+1], points[i+1][j], f'{columnLabel}{rowLabel}')
                 row.append(s)
                 cv2.polylines(warpedImg, s.polyCoords(), True, thickness=3, color=(0,0,255))
+                cv2.putText(warpedImg, s.name, [s.bl[0] + 10, s.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 2, color=(0,0,255), thickness=3, lineType=2)
 
             squares.append(row)
 
@@ -98,28 +101,31 @@ class BoardFinder:
         warp = cv2.warpPerspective(img, warpMatrix, (maxWidth, maxHeight))
         return warp, warpMatrix
 
-img = cv2.imread('./images/corners.jpg')
-##cv2.imshow('img',img)
-#cv2.waitKey(0)
-finder = BoardFinder()
 
-rect = finder.findCorners(img)
-warpedImg, warpMatrix = finder.getWarpBoard(img, rect)
-finder.getSquares(warpedImg)
-print(warpedImg.shape)
-# print("************")
-# print(tl)
-# print(tr)
 
-# print(bt)
-# cv2.circle(img, tl, 10, (255,0,0), 3)
-# cv2.circle(img, tr, 10, (255,0,0), 3)
-# cv2.circle(img, bl, 10, (255,0,0), 3)
-# cv2.circle(img, br, 10, (255,0,0), 3)
+if __name__ == "__main__":
+    img = cv2.imread('./images/corners.jpg')
+    ##cv2.imshow('img',img)
+    #cv2.waitKey(0)
+    finder = BoardFinder()
 
-# cv2.line(img, tl, tr, (255,0,0), 3)
+    rect = finder.findCorners(img)
+    warpedImg, warpMatrix = finder.getWarpBoard(img, rect)
+    finder.getSquares(warpedImg)
+    print(warpedImg.shape)
+    # print("************")
+    # print(tl)
+    # print(tr)
 
-resized = imutils.resize(warpedImg, 800)
-cv2.imshow('img',resized)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+    # print(bt)
+    # cv2.circle(img, tl, 10, (255,0,0), 3)
+    # cv2.circle(img, tr, 10, (255,0,0), 3)
+    # cv2.circle(img, bl, 10, (255,0,0), 3)
+    # cv2.circle(img, br, 10, (255,0,0), 3)
+
+    # cv2.line(img, tl, tr, (255,0,0), 3)
+
+    resized = imutils.resize(warpedImg, 800)
+    cv2.imshow('img',resized)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
