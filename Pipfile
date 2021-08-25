@@ -7,6 +7,7 @@ name = "pypi"
 opencv-contrib-python = "*"
 imutils = "*"
 shapely = "*"
+scipy = "*"
 
 [dev-packages]
 

@@ -9,7 +9,7 @@ from shapely.geometry import Polygon
 import datetime
 import time
 
-def findArucoMarkers(img, markerSize = 6, totalMarkers=250, draw=True):
+def findArucoMarkers(img, markerSize = 4, totalMarkers=50, draw=True):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     key = getattr(aruco, f'DICT_{markerSize}X{markerSize}_{totalMarkers}')
     arucoDict = aruco.Dictionary_get(key)
@@ -66,24 +66,25 @@ def drawStatus(bboxs, fps):
         print("------------")
             
 
-cap = cv2.VideoCapture(0)
-cap.set(3, 3264)
-cap.set(4, 2448)
-cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
-fps = FPS(5).start()
+if __name__ == "__main__":
+    cap = cv2.VideoCapture(0)
+    cap.set(3, 3264)
+    cap.set(4, 2448)
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
+    fps = FPS(5).start()
 
-while True:
-    ret, img = cap.read()
-    bboxs, ids = findArucoMarkers(img, 4, 50)
-    drawStatus(bboxs, fps)
-    resized = imutils.resize(img, 1000)
-    cv2.imshow('img',resized)
-    fps.updateAndPrintAndReset()
-    
-    k = cv2.waitKey(1) & 0xff
-    quit = doKeys(k, cap, img)
-    if (quit):
-        break
+    while True:
+        ret, img = cap.read()
+        bboxs, ids = findArucoMarkers(img)
+        #drawStatus(bboxs, fps)
+        resized = imutils.resize(img, 1000)
+        cv2.imshow('img',resized)
+        fps.updateAndPrintAndReset()
+        
+        k = cv2.waitKey(1) & 0xff
+        quit = doKeys(k, cap, img)
+        if (quit):
+            break
 
-cap.release()
-cv2.destroyAllWindows()
+    cap.release()
+    cv2.destroyAllWindows()
