@@ -75,7 +75,7 @@ def generatePiece(markerId, markerSizeInMm, pieceSizeInMm, bufferSizeInMm = 1):
     img[y: y+markerSizeInPixels, x:x+markerSizeInPixels] = leftSide
 
     borderedImg = cv2.copyMakeBorder(img, 
-        rint(bufferSize), rint(bufferSize), rint(bufferSize), rint(bufferSize), 
+        1, 1, 1, 1, 
         cv2.BORDER_CONSTANT, value=[0,0,0])
     return borderedImg
 
