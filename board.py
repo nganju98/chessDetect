@@ -4,7 +4,12 @@ from shapely import coords
 import aruco
 import numpy as np
 from shapely.geometry import Polygon
+from shapely.geometry import Point
 from typing import List
+from timeit import default_timer as timer
+import datetime
+import matplotlib.path as mpltPath
+
 
 class Quad():
     def __init__(self, tl, tr, br, bl, name):
@@ -13,6 +18,8 @@ class Quad():
         self.br = br
         self.bl = bl
         self.name = name
+        self.piece = None
+        self.path = mpltPath.Path([tl, tr, br, bl])
     
     def coords(self):
         return np.array([self.tl, self.tr, self.br, self.bl])
@@ -29,62 +36,138 @@ class Quad():
         P = np.array([np.float32(x)])
         orig = cv2.perspectiveTransform(P,inv)
         
-        print (f'orig={orig}')
+        #print (f'orig={orig}')
         origint = np.around(orig).astype(int)[0]
         
         retval: Quad = Quad(origint[0], origint[1], origint[2], origint[3], self.name)
         return retval;
 
     def draw(self, img):
-        cv2.polylines(img, self.polyCoords(), True, thickness=3, color=(0,0,255))
-        cv2.putText(img, self.name, [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 2, color=(0,0,255), thickness=3, lineType=2)
+        if (self.piece is None):
+            cv2.polylines(img, self.polyCoords(), True, thickness=3, color=(0,0,255))
+            cv2.putText(img, self.name, [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 2, color=(0,0,255), thickness=3, lineType=2)
+        else:
+            cv2.polylines(img, self.polyCoords(), True, thickness=3, color=(255,255,255))
+            cv2.putText(img, f'{self.name} :: {self.piece}', [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 2, color=(255,255,255), thickness=3, lineType=2)
 
 
+    def scanPieces(self, points, ids):
+        #polygon = Polygon(self.coords())
+        #return polygon.contains(Point(point[0], point[1]))
+        #return True
+        x = self.path.contains_points(points)
+        if (True in x):
+            self.piece = ids[np.where(x == True)][0]
+            #print ('found a piece')
+        return x
 
 class BoardFinder:
         
-    def __init__(self, img):
+    def __init__(self, img, bboxs, ids):
         self.img = img
+        self.bboxs = bboxs
+        self.ids = ids
 
-
-    def process(self, draw=True):
-        self.rect = self.findCorners(self.img, draw)
-        print(f'rect= {self.rect}')
-        self.warpedImg, self.warpMatrix = self.getWarpBoard(self.img, self.rect)
-        self.warpedSquares = self.getSquares(self.warpedImg, draw, draw)
-        self.origSquares :  List[List[Quad]]= self.getOriginalSquares(self.warpMatrix, self.warpedSquares)
-        return self
+    def calibrate(self, draw=True):
+        self.processed = datetime.datetime.now()
+        self.rect = BoardFinder.findCorners(self.bboxs, self.ids)
+        if (self.rect is not None):
+            self.warpedImg, self.warpMatrix, self.warpWidth, self.warpHeight = self.getWarpBoard(self.img, self.rect, draw)
+            
+            self.warpedSquares = self.getSquares(self.warpedImg, self.warpWidth, self.warpHeight, draw, draw)
+            
+            self.origSquares :  List[List[Quad]]= self.getOriginalSquares(self.warpMatrix, self.warpedSquares)
+            self.calibrateSuccess = True
+        else:
+            self.calibrateSuccess = False
+        return self.calibrateSuccess
         
+    def ageInMs(self):
+        age : datetime.timedelta = datetime.datetime.now() - self.processed
+        return age.total_seconds() * 1000
+
+       
+
+    def markPieces(self, bboxs, ids):
+        
+        if ids is None:
+            return
+        idAry = ids.flatten()
+        for row in self.origSquares:
+            for square in row:
+                square.piece = None
+        pointList = []
+        validIds = []
+        for (markerCorner, markerId) in zip(bboxs, idAry):
+		# extract the marker corners (which are always returned in
+		# top-left, top-right, bottom-right, and bottom-left order)
+            if (markerId >= 10):
+                if (markerId >= 28):
+                    print(markerId)
+                corners = markerCorner.reshape((4, 2))
+                (topLeft, topRight, bottomRight, bottomLeft) = corners
+                pointList.append(bottomLeft)
+                validIds.append(markerId)
+                #print(f'found one at {bottomLeft}')
+                #self.markOrigSquare(bottomLeft, markerId)
+        pointAry = np.asarray(pointList)
+        validIdsAry = np.asarray(validIds)
+        for row in self.origSquares:
+            for square in row:
+                square.scanPieces(pointAry, validIdsAry)
+
+
     def drawOrigSquares(self, img):
         for row in self.origSquares:
             for square in row:
                 square.draw(img)
 
-    
-    def findCorners(self, img, draw=True):
-        print(f'finding corners on: {img.shape}')
-        bbox, ids = aruco.findArucoMarkers(img, draw=draw)
-        ids = ids.flatten()
-        tl = bbox[np.where(ids == 0)[0][0]][0][0].astype(int)
-        tr = bbox[np.where(ids == 1)[0][0]][0][0].astype(int)
-        br = bbox[np.where(ids == 2)[0][0]][0][0].astype(int)
-        bl = bbox[np.where(ids == 3)[0][0]][0][0].astype(int)
-        return np.array([tl, tr, br, bl], np.float32)
+    def idsPresent(ids):
+        return (ids is not None and 0 in ids and 1 in ids and 2 in ids and 3 in ids)
+
+    def cornersChanged(self, bboxs, ids):
+        if (not BoardFinder.idsPresent(ids)):
+            return False
+        newBox = BoardFinder.findCorners(bboxs, ids)
+        total = 0
+        for i in range(0,3):
+            dist = np.sqrt( (newBox[i][0] - self.rect[i][0])**2 + (newBox[i][1] - self.rect[i][1])**2 )
+            total += dist
+        #print(f'corner displacement = {dist}')
+        if (dist > 5):
+            print (f'corners changed by: {dist}')
+            return True
+        else:
+            return False
+        
+
+    def findCorners(bboxs, ids):
+        #print(f'finding corners on: {img.shape}')
+        #bboxs, ids = aruco.findArucoMarkers(img, draw=draw)
+        idAry = ids.flatten()
+        if (BoardFinder.idsPresent(idAry)):
+            tl = bboxs[np.where(idAry == 0)[0][0]][0][0].astype(int)
+            tr = bboxs[np.where(idAry == 1)[0][0]][0][0].astype(int)
+            br = bboxs[np.where(idAry == 2)[0][0]][0][0].astype(int)
+            bl = bboxs[np.where(idAry == 3)[0][0]][0][0].astype(int)
+            return np.array([tl, tr, br, bl], np.float32)
+        else:
+            return None
 
     def between(self, p1, p2, distance):
         x = (p2[0] - p1[0]) * distance + p1[0]
         y = (p2[1] - p1[1]) * distance + p1[1]
         return [int(x), int(y)]
 
-    def getSquares(self, warpedImg, drawPoints=True, drawSquares=True):
-        print(warpedImg.shape)
-        maxHeight, maxWidth,  _ = warpedImg.shape
+    def getSquares(self, warpedImg, warpWidth, warpHeight, drawPoints=True, drawSquares=True):
+        #print(warpedImg.shape)
+        #warpHeight, warpWidth,  _ = warpedImg.shape
         points = []
         for j in range(0,9):
-            yl = self.between([0,0], [0,maxHeight-1], j/8)
+            yl = self.between([0,0], [0,warpHeight-1], j/8)
             row = []
             for i in range(0,9):
-                bt = self.between(yl, [maxWidth-1,yl[1]], i/8)
+                bt = self.between(yl, [warpWidth-1,yl[1]], i/8)
                 #print(bt)
                 row.append(bt)
                 #cv2.circle(warpedImg, bt, 10, (255,0,0), 3)
@@ -122,7 +205,7 @@ class BoardFinder:
             retval.append(newRow)
         return retval
 
-    def getWarpBoard(self, img, rect):
+    def getWarpBoard(self, img, rect, draw=True):
         tl, tr, br, bl = rect
         widthA = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
         widthB = np.sqrt(((tr[0] - tl[0]) ** 2) + ((tr[1] - tl[1]) ** 2))
@@ -145,8 +228,11 @@ class BoardFinder:
         #print(rect)
         #print(dst)
         warpMatrix = cv2.getPerspectiveTransform(rect, dst)
-        warp = cv2.warpPerspective(img, warpMatrix, (maxWidth, maxHeight))
-        return warp, warpMatrix
+        warp = None
+        if draw:
+            print("drawing warped board")
+            warp = cv2.warpPerspective(img, warpMatrix, (maxWidth, maxHeight))
+        return warp, warpMatrix, maxWidth, maxHeight
 
 
 
@@ -154,8 +240,8 @@ if __name__ == "__main__":
     img = cv2.imread('./images/corners.jpg')
     ##cv2.imshow('img',img)
     #cv2.waitKey(0)
-    board = BoardFinder(img).process(True)
-    board.drawOrigSquares(img)
+    #board = BoardFinder(img).process(True)
+    #board.drawOrigSquares(img)
     #board.drawOrigSquares(img)
     # finder = BoardFinder()
 

@@ -8,6 +8,7 @@ from imutils.video import WebcamVideoStream
 from shapely.geometry import Polygon
 import datetime
 import time
+from board import BoardFinder
 
 from aruco import findArucoMarkers
 
@@ -59,10 +60,22 @@ if __name__ == "__main__":
     cap.set(4, 2448)
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
     fps = FPS(5).start()
-
+    board = None
     while True:
         ret, img = cap.read()
         bboxs, ids = findArucoMarkers(img)
+        if (board is None or not board.calibrateSuccess or
+            board.cornersChanged(bboxs, ids) or
+           (BoardFinder.idsPresent(ids) and board.ageInMs() > 4000)):
+            board = BoardFinder(img, bboxs, ids)
+            #print("procesing board")
+            board.calibrate(False)
+                
+        if (board.calibrateSuccess):
+            #print(board.ageInMs())
+            board.markPieces(bboxs, ids)
+            board.drawOrigSquares(img)
+        
         #drawStatus(bboxs, fps)
         resized = imutils.resize(img, 1000)
         cv2.imshow('img',resized)
