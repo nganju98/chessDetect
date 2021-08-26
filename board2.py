@@ -5,7 +5,7 @@ import go
 import numpy as np
 from shapely.geometry import Polygon
 
-class Square():
+class Quad():
     def __init__(self, tl, tr, br, bl, name):
         self.tl = tl
         self.tr = tr
@@ -19,6 +19,21 @@ class Square():
     def polyCoords(self):
         return [self.coords()]
         
+    def warpInverse(self, matrix):
+        _, inv = cv2.invert(matrix) 
+        x = np.array([[self.tl[0], self.tl[1]],
+            [self.tr[0], self.tr[1]],
+            [self.br[0], self.br[1]],
+            [self.bl[0], self.bl[1]]])
+        P = np.array([np.float32(x)])
+        orig = cv2.perspectiveTransform(P,inv)
+        
+        print (f'orig={orig}')
+        origint = np.around(orig).astype(int)[0]
+        
+        retval: Quad = Quad(origint[0], origint[1], origint[2], origint[3], self.name)
+        return retval;
+
 
 
 class BoardFinder:
@@ -47,33 +62,35 @@ class BoardFinder:
             row = []
             for i in range(0,9):
                 bt = self.between(yl, [maxWidth-1,yl[1]], i/8)
-                print(bt)
+                #print(bt)
                 row.append(bt)
                 #cv2.circle(warpedImg, bt, 10, (255,0,0), 3)
             points.append(row)
-        print(points)
-
-        for row in points:
-            for point in row:
-                cv2.circle(warpedImg, point, 10, (255,0,0), 3)
-        
+        #print(points)
+        if drawPoints:
+            for row in points:
+                for point in row:
+                    cv2.circle(warpedImg, point, 10, (255,0,0), 3)
+            
         squares = []
         for i in range (0,8):
             row = []
             rowLabel = 8-i
             for j in range(0,8):
                 columnLabel = chr(97 + j)
-                s = Square(points[i][j], points[i][j+1], points[i+1][j+1], points[i+1][j], f'{columnLabel}{rowLabel}')
+                s = Quad(points[i][j], points[i][j+1], points[i+1][j+1], points[i+1][j], f'{columnLabel}{rowLabel}')
                 row.append(s)
-                cv2.polylines(warpedImg, s.polyCoords(), True, thickness=3, color=(0,0,255))
-                cv2.putText(warpedImg, s.name, [s.bl[0] + 10, s.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 2, color=(0,0,255), thickness=3, lineType=2)
+                if drawSquares:
+                    cv2.polylines(warpedImg, s.polyCoords(), True, thickness=3, color=(0,0,255))
+                    cv2.putText(warpedImg, s.name, [s.bl[0] + 10, s.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 2, color=(0,0,255), thickness=3, lineType=2)
 
             squares.append(row)
 
-
+        return squares
         #s : Square = Square(points[0][0], points[0][1], points[1][1], points[1][0], 'a1')
         
-
+    def getOriginalSquares(matrix, warpedSquares):
+        print ('hi')
 
     def getWarpBoard(self, img, rect):
         tl, tr, br, bl = rect
@@ -107,12 +124,17 @@ if __name__ == "__main__":
     img = cv2.imread('./images/corners.jpg')
     ##cv2.imshow('img',img)
     #cv2.waitKey(0)
+
     finder = BoardFinder()
 
     rect = finder.findCorners(img)
+    print(f'rect= {rect}')
     warpedImg, warpMatrix = finder.getWarpBoard(img, rect)
-    finder.getSquares(warpedImg)
-    print(warpedImg.shape)
+    warpedSquares = finder.getSquares(warpedImg)
+    origSquares = finder.getOriginalSquares(warpedSquares, warpMatrix)
+    #test : Quad = squares[0][0].warpInverse(warpMatrix)
+    #cv2.polylines(img, test.polyCoords(), True, thickness=3, color=(0,0,255))
+                
     # print("************")
     # print(tl)
     # print(tr)
@@ -125,7 +147,7 @@ if __name__ == "__main__":
 
     # cv2.line(img, tl, tr, (255,0,0), 3)
 
-    resized = imutils.resize(warpedImg, 800)
+    resized = imutils.resize(img, 800)
     cv2.imshow('img',resized)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
