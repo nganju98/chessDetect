@@ -1,9 +1,10 @@
 import cv2
 import imutils
 from shapely import coords
-import go
+import aruco
 import numpy as np
 from shapely.geometry import Polygon
+from typing import List
 
 class Quad():
     def __init__(self, tl, tr, br, bl, name):
@@ -34,13 +35,35 @@ class Quad():
         retval: Quad = Quad(origint[0], origint[1], origint[2], origint[3], self.name)
         return retval;
 
+    def draw(self, img):
+        cv2.polylines(img, self.polyCoords(), True, thickness=3, color=(0,0,255))
+        cv2.putText(img, self.name, [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 2, color=(0,0,255), thickness=3, lineType=2)
+
 
 
 class BoardFinder:
         
-    def findCorners(self, img):
+    def __init__(self, img):
+        self.img = img
+
+
+    def process(self, draw=True):
+        self.rect = self.findCorners(self.img, draw)
+        print(f'rect= {self.rect}')
+        self.warpedImg, self.warpMatrix = self.getWarpBoard(self.img, self.rect)
+        self.warpedSquares = self.getSquares(self.warpedImg, draw, draw)
+        self.origSquares :  List[List[Quad]]= self.getOriginalSquares(self.warpMatrix, self.warpedSquares)
+        return self
+        
+    def drawOrigSquares(self, img):
+        for row in self.origSquares:
+            for square in row:
+                square.draw(img)
+
+    
+    def findCorners(self, img, draw=True):
         print(f'finding corners on: {img.shape}')
-        bbox, ids = go.findArucoMarkers(img)
+        bbox, ids = aruco.findArucoMarkers(img, draw=draw)
         ids = ids.flatten()
         tl = bbox[np.where(ids == 0)[0][0]][0][0].astype(int)
         tr = bbox[np.where(ids == 1)[0][0]][0][0].astype(int)
@@ -89,8 +112,15 @@ class BoardFinder:
         return squares
         #s : Square = Square(points[0][0], points[0][1], points[1][1], points[1][0], 'a1')
         
-    def getOriginalSquares(matrix, warpedSquares):
-        print ('hi')
+    def getOriginalSquares(self, matrix, warpedSquares):
+        retval = []
+        for row in warpedSquares:
+            newRow = []
+            for square in row:
+                newSquare = square.warpInverse(matrix)
+                newRow.append(newSquare)
+            retval.append(newRow)
+        return retval
 
     def getWarpBoard(self, img, rect):
         tl, tr, br, bl = rect
@@ -124,14 +154,19 @@ if __name__ == "__main__":
     img = cv2.imread('./images/corners.jpg')
     ##cv2.imshow('img',img)
     #cv2.waitKey(0)
+    board = BoardFinder(img).process(True)
+    board.drawOrigSquares(img)
+    #board.drawOrigSquares(img)
+    # finder = BoardFinder()
 
-    finder = BoardFinder()
-
-    rect = finder.findCorners(img)
-    print(f'rect= {rect}')
-    warpedImg, warpMatrix = finder.getWarpBoard(img, rect)
-    warpedSquares = finder.getSquares(warpedImg)
-    origSquares = finder.getOriginalSquares(warpedSquares, warpMatrix)
+    # rect = finder.findCorners(img)
+    # print(f'rect= {rect}')
+    # warpedImg, warpMatrix = finder.getWarpBoard(img, rect)
+    # warpedSquares = finder.getSquares(warpedImg)
+    # origSquares :  List[List[Quad]]= finder.getOriginalSquares(warpMatrix, warpedSquares)
+    # for row in origSquares:
+    #     for square in row:
+    #         square.draw(img)
     #test : Quad = squares[0][0].warpInverse(warpMatrix)
     #cv2.polylines(img, test.polyCoords(), True, thickness=3, color=(0,0,255))
                 
