@@ -8,7 +8,9 @@ from imutils.video import WebcamVideoStream
 from shapely.geometry import Polygon
 import datetime
 import time
-from board import BoardFinder
+from board import Board
+
+from boardFinder import BoardFinder
 
 from aruco import findArucoMarkers
 
@@ -67,7 +69,7 @@ if __name__ == "__main__":
         if (board is None or not board.calibrateSuccess or
             board.cornersChanged(bboxs, ids) or
            (BoardFinder.idsPresent(ids) and board.ageInMs() > 4000)):
-            board = BoardFinder(img, bboxs, ids)
+            board = Board(img, bboxs, ids)
             #print("procesing board")
             board.calibrate(False)
                 
