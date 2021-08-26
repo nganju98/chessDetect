@@ -25,8 +25,9 @@ class Board:
             self.warpedImg, self.warpMatrix, self.warpWidth, self.warpHeight = BoardFinder.getWarpBoard(self.img, self.rect, draw)
             
             self.warpedSquares = BoardFinder.getSquares(self.warpedImg, self.warpWidth, self.warpHeight, draw, draw)
+            _, self.inverseMatrix = cv2.invert(self.warpMatrix)
+            self.origSquares = BoardFinder.getOriginalSquares(self.inverseMatrix, self.warpedSquares)
             
-            self.origSquares = BoardFinder.getOriginalSquares(self.warpMatrix, self.warpedSquares)
             self.calibrateSuccess = True
         else:
             self.calibrateSuccess = False

@@ -18,14 +18,14 @@ class Quad():
     def polyCoords(self):
         return [self.coords()]
         
-    def warpInverse(self, matrix):
-        _, inv = cv2.invert(matrix) 
+    def warpInverse(self, inverseMatrix):
+        #_, inv = cv2.invert(matrix) 
         x = np.array([[self.tl[0], self.tl[1]],
             [self.tr[0], self.tr[1]],
             [self.br[0], self.br[1]],
             [self.bl[0], self.bl[1]]])
         P = np.array([np.float32(x)])
-        orig = cv2.perspectiveTransform(P,inv)
+        orig = cv2.perspectiveTransform(P,inverseMatrix)
         
         #print (f'orig={orig}')
         origint = np.around(orig).astype(int)[0]

@@ -67,12 +67,12 @@ class BoardFinder:
         return squares
         #s : Square = Square(points[0][0], points[0][1], points[1][1], points[1][0], 'a1')
         
-    def getOriginalSquares(matrix, warpedSquares):
+    def getOriginalSquares(inverseMatrix, warpedSquares):
         retval = []
         for row in warpedSquares:
             newRow = []
             for square in row:
-                newSquare = square.warpInverse(matrix)
+                newSquare = square.warpInverse(inverseMatrix)
                 newRow.append(newSquare)
             retval.append(newRow)
         return retval
