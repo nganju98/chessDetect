@@ -51,9 +51,7 @@ class Board:
         for (markerCorner, markerId) in zip(bboxs, idAry):
 		# extract the marker corners (which are always returned in
 		# top-left, top-right, bottom-right, and bottom-left order)
-            if (markerId >= 10):
-                if (markerId >= 28):
-                    print(markerId)
+            if (markerId >= 10 and markerId < 28):
                 corners = markerCorner.reshape((4, 2))
                 (topLeft, topRight, bottomRight, bottomLeft) = corners
                 pointList.append(bottomLeft)
