@@ -1,6 +1,8 @@
 import cv2
 
 import os
+
+import numpy as np
 from fps import FPS
 import imutils
 
@@ -68,7 +70,17 @@ if __name__ == "__main__":
     board = None
     while True:
         ret, img = cap.read()
-        bboxs, ids = findArucoMarkers(img)
+        bbox = None
+        ids = None
+        if (board is not None and board.calibrateSuccess):
+            #tl, tr, br, bl = board.rect
+            bounding = np.asarray(Polygon(board.rect).bounds, dtype=np.int32)
+            bboxs, ids = findArucoMarkers(img)
+            
+            #bboxs, ids = findArucoMarkers(img[bounding[1]:bounding[3], bounding[0]:bounding[2]])
+        else:
+            bboxs, ids = findArucoMarkers(img)
+        
         if (board is None or not board.calibrateSuccess or
             board.cornersChanged(bboxs, ids) or
            (BoardFinder.idsPresent(ids) and board.ageInMs() > 4000)):
