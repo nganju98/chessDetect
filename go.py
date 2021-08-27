@@ -1,14 +1,14 @@
 import cv2
 
-import numpy as np
 import os
 from fps import FPS
 import imutils
-from imutils.video import WebcamVideoStream
+
 from shapely.geometry import Polygon
 import datetime
 import time
 from board import Board
+import pieces
 
 from boardFinder import BoardFinder
 
@@ -72,13 +72,13 @@ if __name__ == "__main__":
         if (board is None or not board.calibrateSuccess or
             board.cornersChanged(bboxs, ids) or
            (BoardFinder.idsPresent(ids) and board.ageInMs() > 4000)):
-            board = Board(img, bboxs, ids)
+            board = Board(pieces.getCurrentSet(), pieces.getCurrentBoardWidthInMm())
             #print("procesing board")
-            board.calibrate(False)
+            board.calibrate(img, bboxs, ids, False)
                 
         if (board.calibrateSuccess):
             #print(board.ageInMs())
-            board.markPieces(bboxs, ids)
+            board.markPieces(bboxs, ids, img)
             board.drawOrigSquares(img)
         
         #drawStatus(bboxs, fps)

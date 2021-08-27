@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import matplotlib.path as mpltPath
+import pieces
 
 class Quad():
     def __init__(self, tl, tr, br, bl, name):
@@ -9,7 +10,7 @@ class Quad():
         self.br = br
         self.bl = bl
         self.name = name
-        self.piece = None
+        self.pieces = []
         self.path = mpltPath.Path([tl, tr, br, bl])
     
     def coords(self):
@@ -34,20 +35,18 @@ class Quad():
         return retval;
 
     def draw(self, img):
-        if (self.piece is None):
+        if (len(self.pieces) == 0):
             cv2.polylines(img, self.polyCoords(), True, thickness=3, color=(0,0,255))
-            cv2.putText(img, self.name, [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 2, color=(0,0,255), thickness=3, lineType=2)
+            cv2.putText(img, self.name, [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 1, color=(0,0,255), thickness=3, lineType=2)
         else:
             cv2.polylines(img, self.polyCoords(), True, thickness=3, color=(255,255,255))
-            cv2.putText(img, f'{self.name} :: {self.piece}', [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 2, color=(255,255,255), thickness=3, lineType=2)
+            piece : pieces.Piece = pieces.getCurrentSet()[self.pieces[0]]
+            cv2.putText(img, f'{self.name}::{piece.abbrev}', [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 1, color=(255,255,255), thickness=3, lineType=2)
 
 
     def scanPieces(self, points, ids):
-        #polygon = Polygon(self.coords())
-        #return polygon.contains(Point(point[0], point[1]))
-        #return True
+        self.pieces=[]
         x = self.path.contains_points(points)
         if (True in x):
-            self.piece = ids[np.where(x == True)][0]
-            #print ('found a piece')
+            self.pieces = ids[np.where(x == True)]
         return x

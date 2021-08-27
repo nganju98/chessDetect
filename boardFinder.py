@@ -5,8 +5,11 @@ from shapely.geometry import Point
 from typing import List
 from timeit import default_timer as timer
 from quad import Quad
+import math
 
 
+def rint(input):
+    return np.int32( np.round(input))
 class BoardFinder:
 
     def idsPresent(ids):
@@ -105,3 +108,17 @@ class BoardFinder:
             print("drawing warped board")
             warp = cv2.warpPerspective(img, warpMatrix, (maxWidth, maxHeight))
         return warp, warpMatrix, maxWidth, maxHeight
+
+
+    def getPieceCenter(corners, pixelLength):
+        (topLeft, topRight, bottomRight, bottomLeft) = corners
+        bottomCenter = BoardFinder.between(bottomLeft, bottomRight, .5)
+        sideLength =  math.dist(bottomLeft, topLeft)
+        scale = pixelLength / sideLength
+        xDist = rint( (bottomLeft[0] - topLeft[0]) * scale)
+        yDist = rint((bottomLeft[1] - topLeft[1]) * scale)
+        center = [bottomCenter[0] + xDist, bottomCenter[1] + yDist]
+        return center
+
+
+x = BoardFinder.getPieceCenter([[0, 103], [0,0],[7,104], [4, 100]], 75)

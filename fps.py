@@ -16,7 +16,7 @@ class FPS:
         intervalElapsed = self.elapsed()
         if (intervalElapsed > self.interval):
             perf = self._numFrames / intervalElapsed
-            print (f'FPS = {perf}')
+            print (f'FPS = {perf:.2f}, one frame = {int(1000 * intervalElapsed / self._numFrames)}ms')
             return True
         else:
             return False

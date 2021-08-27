@@ -7,21 +7,28 @@ from shapely.geometry import Polygon
 from shapely.geometry import Point
 from timeit import default_timer as timer
 import datetime
-
+from pieces import Piece
 from boardFinder import BoardFinder
+
 
 
 class Board:
         
-    def __init__(self, img, bboxs, ids):
-        self.img = img
-        self.bboxs = bboxs
-        self.ids = ids
+    def __init__(self, pieces, boardWidthInMm):
+        self.pieces = pieces
+        self.boardWidthInMm = boardWidthInMm
 
-    def calibrate(self, draw=True):
+    def calibrate(self, img, bboxs, ids, draw=True):
+        self.img = img
         self.processed = datetime.datetime.now()
-        self.rect = BoardFinder.findCorners(self.bboxs, self.ids)
-        if (self.rect is not None):
+        self.rect = BoardFinder.findCorners(bboxs, ids)
+        avgLength = ((self.rect[1][0] - self.rect[0][0]) +
+                    (self.rect[2][0] - self.rect[3][0]) +
+                    (self.rect[3][1] - self.rect[0][1]) +
+                    (self.rect[2][1] - self.rect[1][1])) / 4
+        self.pixelsPerMm = avgLength/self.boardWidthInMm
+
+        if (self.rect is not None): 
             self.warpedImg, self.warpMatrix, self.warpWidth, self.warpHeight = BoardFinder.getWarpBoard(self.img, self.rect, draw)
             
             self.warpedSquares = BoardFinder.getSquares(self.warpedImg, self.warpWidth, self.warpHeight, draw, draw)
@@ -37,28 +44,28 @@ class Board:
         age : datetime.timedelta = datetime.datetime.now() - self.processed
         return age.total_seconds() * 1000
 
-       
-
-    def markPieces(self, bboxs, ids):
+    def markPieces(self, bboxs, ids, img, draw=True):
         
         if ids is None:
             return
         idAry = ids.flatten()
-        for row in self.origSquares:
-            for square in row:
-                square.piece = None
+        
         pointList = []
         validIds = []
         for (markerCorner, markerId) in zip(bboxs, idAry):
-		# extract the marker corners (which are always returned in
-		# top-left, top-right, bottom-right, and bottom-left order)
-            if (markerId >= 10 and markerId < 28):
+            if (markerId in self.pieces):
                 corners = markerCorner.reshape((4, 2))
-                (topLeft, topRight, bottomRight, bottomLeft) = corners
-                pointList.append(bottomLeft)
+                
+                piece : Piece = self.pieces[markerId]
+                pixelLength = self.pixelsPerMm * (piece.diameterInMm / 2)
+                pieceCenter = BoardFinder.getPieceCenter(corners, pixelLength)
+                if draw:
+                    cv2.circle(img, pieceCenter, 5, (0,255,0), 2)
+                    
+                pointList.append(pieceCenter)
                 validIds.append(markerId)
-                #print(f'found one at {bottomLeft}')
-                #self.markOrigSquare(bottomLeft, markerId)
+                
+                
         pointAry = np.asarray(pointList)
         validIdsAry = np.asarray(validIds)
         for row in self.origSquares:
