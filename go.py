@@ -8,7 +8,7 @@ from shapely.geometry import Polygon
 import datetime
 import time
 from board import Board
-import pieces
+import equipment
 
 from boardFinder import BoardFinder
 
@@ -95,7 +95,7 @@ class Runner:
             if (board is None or not board.calibrateSuccess or
                 board.cornersChanged(bboxs, ids) or
             (BoardFinder.idsPresent(ids) and board.ageInMs() > 4000)):
-                board = Board(pieces.getCurrentSet(), pieces.getCurrentBoardWidthInMm())
+                board = Board(equipment.getCurrentSet(), equipment.getCurrentBoardWidthInMm())
                 #print("procesing board")
                 board.calibrate(img, bboxs, ids, False)
                     

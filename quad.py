@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import matplotlib.path as mpltPath
-import pieces
+import equipment
 
 class Quad():
     def __init__(self, tl, tr, br, bl, name):
@@ -40,7 +40,7 @@ class Quad():
             cv2.putText(img, self.name, [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 1, color=(0,0,255), thickness=3, lineType=2)
         else:
             cv2.polylines(img, self.polyCoords(), True, thickness=3, color=(255,255,255))
-            piece : pieces.Piece = pieces.getCurrentSet()[self.pieces[0]]
+            piece : equipment.Piece = equipment.getCurrentSet()[self.pieces[0]]
             cv2.putText(img, f'{self.name}::{piece.abbrev}', [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 1, color=(255,255,255), thickness=3, lineType=2)
 
 

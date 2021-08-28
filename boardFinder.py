@@ -6,6 +6,7 @@ from typing import List
 from timeit import default_timer as timer
 from quad import Quad
 import math
+from equipment import Markers
 
 
 def rint(input):
@@ -21,13 +22,27 @@ class BoardFinder:
         #bboxs, ids = aruco.findArucoMarkers(img, draw=draw)
         idAry = ids.flatten()
         if (BoardFinder.idsPresent(idAry)):
-            tl = bboxs[np.where(idAry == 0)[0][0]][0][0].astype(int)
-            tr = bboxs[np.where(idAry == 1)[0][0]][0][0].astype(int)
-            br = bboxs[np.where(idAry == 2)[0][0]][0][0].astype(int)
-            bl = bboxs[np.where(idAry == 3)[0][0]][0][0].astype(int)
+            tl = bboxs[np.where(idAry == Markers.BOARD_TOP_LEFT.value)[0][0]][0][0].astype(int)
+            tr = bboxs[np.where(idAry == Markers.BOARD_TOP_RIGHT.value)[0][0]][0][0].astype(int)
+            br = bboxs[np.where(idAry == Markers.BOARD_BOTTOM_RIGHT.value)[0][0]][0][0].astype(int)
+            bl = bboxs[np.where(idAry == Markers.BOARD_BOTTOM_LEFT.value)[0][0]][0][0].astype(int)
             return np.array([tl, tr, br, bl], np.float32)
         else:
             return None
+    
+    def findButtons(bboxs, ids):
+        idAry = ids.flatten()
+        whiteIds = np.where(idAry == Markers.WHITE_BUTTON.value)[0]
+        whites = []
+        for id in whiteIds:
+            whites.append(bboxs[id][0])
+        
+        blackIds = np.where(idAry == Markers.BLACK_BUTTON.value)[0]
+        blacks = []
+        for id in blackIds:
+            blacks.append(bboxs[id][0])
+        
+        return whites, blacks
 
     def between(p1, p2, distance):
         x = (p2[0] - p1[0]) * distance + p1[0]

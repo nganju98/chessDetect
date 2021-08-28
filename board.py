@@ -7,7 +7,7 @@ from shapely.geometry import Polygon
 from shapely.geometry import Point
 from timeit import default_timer as timer
 import datetime
-from pieces import Piece
+from equipment import Piece
 from boardFinder import BoardFinder
 
 
@@ -22,6 +22,7 @@ class Board:
         self.img = img
         self.processed = datetime.datetime.now()
         self.rect = BoardFinder.findCorners(bboxs, ids)
+        self.whiteButtons, self.blackButtons = BoardFinder.findButtons(bboxs, ids)
         avgLength = ((self.rect[1][0] - self.rect[0][0]) +
                     (self.rect[2][0] - self.rect[3][0]) +
                     (self.rect[3][1] - self.rect[0][1]) +
