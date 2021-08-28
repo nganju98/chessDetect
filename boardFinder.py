@@ -20,6 +20,9 @@ class BoardFinder:
     def findCorners(bboxs, ids):
         #print(f'finding corners on: {img.shape}')
         #bboxs, ids = aruco.findArucoMarkers(img, draw=draw)
+        if (ids is None):
+            return None
+
         idAry = ids.flatten()
         if (BoardFinder.idsPresent(idAry)):
             tl = bboxs[np.where(idAry == Markers.BOARD_TOP_LEFT.value)[0][0]][0][0].astype(int)
@@ -31,6 +34,8 @@ class BoardFinder:
             return None
     
     def findButtons(bboxs, ids):
+        if (ids is None):
+            return None, None
         idAry = ids.flatten()
         whiteIds = np.where(idAry == Markers.WHITE_BUTTON.value)[0]
         whites = []

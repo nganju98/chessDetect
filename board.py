@@ -22,14 +22,16 @@ class Board:
         self.img = img
         self.processed = datetime.datetime.now()
         self.rect = BoardFinder.findCorners(bboxs, ids)
-        self.whiteButtons, self.blackButtons = BoardFinder.findButtons(bboxs, ids)
-        avgLength = ((self.rect[1][0] - self.rect[0][0]) +
+        
+        if (self.rect is not None): 
+            self.whiteButtons, self.blackButtons = BoardFinder.findButtons(bboxs, ids)
+        
+            avgLength = ((self.rect[1][0] - self.rect[0][0]) +
                     (self.rect[2][0] - self.rect[3][0]) +
                     (self.rect[3][1] - self.rect[0][1]) +
                     (self.rect[2][1] - self.rect[1][1])) / 4
-        self.pixelsPerMm = avgLength/self.boardWidthInMm
+            self.pixelsPerMm = avgLength/self.boardWidthInMm
 
-        if (self.rect is not None): 
             self.warpedImg, self.warpMatrix, self.warpWidth, self.warpHeight = BoardFinder.getWarpBoard(self.img, self.rect, draw)
             
             self.warpedSquares = BoardFinder.getSquares(self.warpedImg, self.warpWidth, self.warpHeight, draw, draw)

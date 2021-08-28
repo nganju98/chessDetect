@@ -76,5 +76,7 @@ def getCurrentSet():
 def getCurrentBoardWidthInMm():
     return 450
 
-print(PieceType(10) == PieceType.PAWN)
-print(SET1_DICT[24].color == PieceColor.BLACK)
+
+if __name__ == "__main__":
+    print(PieceType(10) == PieceType.PAWN)
+    print(SET1_DICT[24].color == PieceColor.BLACK)
