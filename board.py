@@ -66,12 +66,12 @@ class Board:
                 pointList.append(pieceCenter)
                 validIds.append(markerId)
                 
-                
-        pointAry = np.asarray(pointList)
-        validIdsAry = np.asarray(validIds)
-        for row in self.origSquares:
-            for square in row:
-                square.scanPieces(pointAry, validIdsAry)
+        if (len(pointList) > 0):
+            pointAry = np.asarray(pointList)
+            validIdsAry = np.asarray(validIds)
+            for row in self.origSquares:
+                for square in row:
+                    square.scanPieces(pointAry, validIdsAry)
 
 
     def drawOrigSquares(self, img):
