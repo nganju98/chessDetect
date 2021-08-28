@@ -11,7 +11,7 @@ from board import Board
 import equipment
 
 from boardFinder import BoardFinder
-
+import threading
 from aruco import findArucoMarkers
 from profiler import Profiler
 class Runner:
@@ -64,9 +64,9 @@ class Runner:
         
                 
 
-    def processBoard(self, img, profiler):
+    def processBoard(img, profiler):
         bboxs, ids = findArucoMarkers(img)
-        profiler.log(2, "Found markers")
+        #profiler.log(2, "Found markers")
         
         # if (board is None or not board.calibrateSuccess or
         #     board.cornersChanged(bboxs, ids) or
@@ -74,13 +74,13 @@ class Runner:
         board = Board(equipment.getCurrentSet(), equipment.getCurrentBoardWidthInMm())
         #print("procesing board")
         board.calibrate(img, bboxs, ids, False)
-        profiler.log(3, "Calibrate")
+        #profiler.log(3, "Calibrate")
                 
         if (board.calibrateSuccess):
             #print(board.ageInMs())
             board.markPieces(bboxs, ids, img)
             board.drawOrigSquares(img)
-        profiler.log(4, "Find pieces")
+        #profiler.log(4, "Find pieces")
         return board
 
     def showImage(self, img, fps):
@@ -117,21 +117,25 @@ class Runner:
         cap.read() # warm up camera
         #cap.set(cv2.CAP_PROP_FPS, 30)
         fps = FPS(5).start()
-        board = None
+
         while True:
             profiler = Profiler()
             ret, img = cap.read()
             profiler.log(1, "Read the frame")
-            
-            self.processBoard(img, profiler)
+            # x = threading.Thread(target=self.processBoard, args=(img,None))
+            # x.start()
+            #profiler.log(12, "Kicked off thread")
+            Runner.processBoard(img, profiler)
             self.showImage(img, fps)
             profiler.log(4, "Show image")
-            fps.updateAndPrintAndReset()
+            
             
             k = cv2.waitKey(1) & 0xff
             quit = self.doKeys(k, cap, img, profiler)
             if (quit):
                 break
+            profiler.log(5, "Did keys")
+            fps.updateAndPrintAndReset(profiler)
 
         cap.release()
         cv2.destroyAllWindows()

@@ -11,12 +11,14 @@ class FPS:
         self._numFrames = 0
         return self
         
-    def updateAndPrint(self):
+    def updateAndPrint(self, profiler = None):
         self._numFrames += 1
         intervalElapsed = self.elapsed()
         if (intervalElapsed > self.interval):
             perf = self._numFrames / intervalElapsed
             print (f'FPS = {perf:.2f}, one frame = {int(1000 * intervalElapsed / self._numFrames)}ms')
+            if (profiler is not None):
+                profiler.output()
             return True
         else:
             return False
@@ -24,8 +26,8 @@ class FPS:
     def checkFPS(self):
         return self._numFrames/self.elapsed()
 
-    def updateAndPrintAndReset(self):
-        if (self.updateAndPrint()):
+    def updateAndPrintAndReset(self, profiler = None):
+        if (self.updateAndPrint(profiler)):
             self.reset()
             return True
         else:
