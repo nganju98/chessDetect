@@ -21,7 +21,7 @@ class Board:
     def calibrate(self, img, bboxs, ids, draw=True):
         self.img = img
         self.processed = datetime.datetime.now()
-        self.rect = BoardFinder.findCorners(bboxs, ids)
+        self.rect = BoardFinder.findCorners(bboxs, ids, img.shape)
         
         if (self.rect is not None): 
             self.whiteButtons, self.blackButtons = BoardFinder.findButtons(bboxs, ids)

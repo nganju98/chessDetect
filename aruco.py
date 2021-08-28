@@ -12,7 +12,7 @@ def getArucoVars():
     arucoParam = aruco.DetectorParameters_create()
     arucoParam.minMarkerPerimeterRate=.02
     arucoParam.maxErroneousBitsInBorderRate=.6
-    arucoParam.errorCorrectionRate=1
+    #arucoParam.errorCorrectionRate=1
     return arucoDict, arucoParam
 
 

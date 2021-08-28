@@ -21,7 +21,7 @@ class Runner:
         self.zoomX = 0
         self.zoomY = 0
         self.zoomFactor = 8
-        self.imgShape = None
+        
 
     def doKeys(self, k, cap, img, profiler:Profiler):
 
@@ -61,28 +61,54 @@ class Runner:
         else:
             return False
 
-    def drawStatus(self, bboxs, fps, img):
-        if (bboxs is not None and len(bboxs) > 0):
-            
-            disp = f'   fps:{fps.checkFPS():.2f}'
-            #print(disp)
         
-            fontScale              = 2
-            fontColor              = (0,0,255)
-            lineType               = 2
-            cv2.putText(img,disp, 
-                (100,100), 
-                cv2.FONT_HERSHEY_SIMPLEX, 
-                fontScale,
-                fontColor,
-                thickness=6,
-                lineType=lineType)
-        else:
-            print("------------")
                 
 
+    def processBoard(self, img, profiler):
+        bboxs, ids = findArucoMarkers(img)
+        profiler.log(2, "Found markers")
+        
+        # if (board is None or not board.calibrateSuccess or
+        #     board.cornersChanged(bboxs, ids) or
+        # (BoardFinder.idsPresent(ids) and board.ageInMs() > 4000)):
+        board = Board(equipment.getCurrentSet(), equipment.getCurrentBoardWidthInMm())
+        #print("procesing board")
+        board.calibrate(img, bboxs, ids, False)
+        profiler.log(3, "Calibrate")
+                
+        if (board.calibrateSuccess):
+            #print(board.ageInMs())
+            board.markPieces(bboxs, ids, img)
+            board.drawOrigSquares(img)
+        profiler.log(4, "Find pieces")
+        return board
+
+    def showImage(self, img, fps):
+        show = None
+        if (self.zoom):
+            img.shape[0]
+            show = img[self.zoomY:self.zoomY + int(img.shape[0]/self.zoomFactor), self.zoomX:self.zoomX+int(img.shape[1]/self.zoomFactor)]
+            show = imutils.resize(show, 1000)
+        else:
+            show = imutils.resize(img, 1000)
+        
+        disp = f'fps:{fps.checkFPS():.2f}, zoomxy={self.zoomX},{self.zoomY}'
+        #print(disp)
+    
+        fontScale              = 0.5
+        fontColor              = (0,255,0)
+        lineType               = 2
+        cv2.putText(show,disp, 
+            (20,20), 
+            cv2.FONT_HERSHEY_SIMPLEX, 
+            fontScale,
+            fontColor,
+            thickness=1,
+            lineType=lineType)
+        cv2.imshow('img',show)
+
     def run(self):
-        cap = cv2.VideoCapture(2, cv2.CAP_FFMPEG)
+        cap = cv2.VideoCapture(0)
         cap.set(3, 3264)
         cap.set(4, 2448)
         cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
@@ -96,32 +122,9 @@ class Runner:
             profiler = Profiler()
             ret, img = cap.read()
             profiler.log(1, "Read the frame")
-            bboxs, ids = findArucoMarkers(img)
-            profiler.log(2, "Found markers")
             
-            if (board is None or not board.calibrateSuccess or
-                board.cornersChanged(bboxs, ids) or
-            (BoardFinder.idsPresent(ids) and board.ageInMs() > 4000)):
-                board = Board(equipment.getCurrentSet(), equipment.getCurrentBoardWidthInMm())
-                #print("procesing board")
-                board.calibrate(img, bboxs, ids, False)
-            profiler.log(3, "Calibrate")
-                 
-            if (board.calibrateSuccess):
-                #print(board.ageInMs())
-                board.markPieces(bboxs, ids, img)
-                board.drawOrigSquares(img)
-            profiler.log(4, "Find pieces")
-            self.drawStatus(bboxs, fps, img)
-            show = None
-            if (self.zoom):
-                img.shape[0]
-                show = img[self.zoomY:self.zoomY + int(img.shape[0]/self.zoomFactor), self.zoomX:self.zoomX+int(img.shape[1]/self.zoomFactor)]
-                show = imutils.resize(show, 1000)
-            else:
-                show = imutils.resize(img, 1000)
-            
-            cv2.imshow('img',show)
+            self.processBoard(img, profiler)
+            self.showImage(img, fps)
             profiler.log(4, "Show image")
             fps.updateAndPrintAndReset()
             

@@ -6,7 +6,7 @@ from typing import List
 from timeit import default_timer as timer
 from quad import Quad
 import math
-from equipment import Markers
+from equipment import Marker
 
 
 def rint(input):
@@ -16,8 +16,20 @@ class BoardFinder:
     def idsPresent(ids):
         return (ids is not None and 0 in ids and 1 in ids and 2 in ids and 3 in ids)
 
+    def cornerFromBbox(bboxs, idAry, marker : Marker):
+        indexes = np.where(idAry == marker.value)[0]
+        marks = []
+        for index in indexes:
+            mark = bboxs[index][0][0]
+            marks.append(mark)
 
-    def findCorners(bboxs, ids):
+        if (len(marks) == 1):
+            return marks[0]
+        else:
+            print(f'There are {len(marks)} {marker.name} markers: {marks}')
+            return None
+
+    def findCorners(bboxs, ids, imgShape):
         #print(f'finding corners on: {img.shape}')
         #bboxs, ids = aruco.findArucoMarkers(img, draw=draw)
         if (ids is None):
@@ -25,24 +37,36 @@ class BoardFinder:
 
         idAry = ids.flatten()
         if (BoardFinder.idsPresent(idAry)):
-            tl = bboxs[np.where(idAry == Markers.BOARD_TOP_LEFT.value)[0][0]][0][0].astype(int)
-            tr = bboxs[np.where(idAry == Markers.BOARD_TOP_RIGHT.value)[0][0]][0][0].astype(int)
-            br = bboxs[np.where(idAry == Markers.BOARD_BOTTOM_RIGHT.value)[0][0]][0][0].astype(int)
-            bl = bboxs[np.where(idAry == Markers.BOARD_BOTTOM_LEFT.value)[0][0]][0][0].astype(int)
-            return np.array([tl, tr, br, bl], np.float32)
+            tl = BoardFinder.cornerFromBbox(bboxs, idAry, Marker.BOARD_TOP_LEFT)
+            tr = BoardFinder.cornerFromBbox(bboxs, idAry, Marker.BOARD_TOP_RIGHT)
+            br = BoardFinder.cornerFromBbox(bboxs, idAry, Marker.BOARD_BOTTOM_RIGHT)
+            bl = BoardFinder.cornerFromBbox(bboxs, idAry, Marker.BOARD_BOTTOM_LEFT)
+            rect = [tl, tr, br, bl]
+            if any(x is None for x in rect):
+                print('failed to calibrate')
+                return None
+            else: 
+                p : Polygon = Polygon([tl, tr, br, bl])
+                totalArea = imgShape[0]*imgShape[1]
+                boardPct = np.round( 100 * p.area / totalArea)
+                if (boardPct < 50):
+                    print (f'board area too small, {p.area} pixels is only {boardPct} of total image')
+                
+                return np.asarray(rect, dtype=np.float32)
         else:
+            print("Didn't find all corners")
             return None
     
     def findButtons(bboxs, ids):
         if (ids is None):
             return None, None
         idAry = ids.flatten()
-        whiteIds = np.where(idAry == Markers.WHITE_BUTTON.value)[0]
+        whiteIds = np.where(idAry == Marker.WHITE_BUTTON.value)[0]
         whites = []
         for id in whiteIds:
             whites.append(bboxs[id][0])
         
-        blackIds = np.where(idAry == Markers.BLACK_BUTTON.value)[0]
+        blackIds = np.where(idAry == Marker.BLACK_BUTTON.value)[0]
         blacks = []
         for id in blackIds:
             blacks.append(bboxs[id][0])

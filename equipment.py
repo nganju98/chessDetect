@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class Markers(Enum):
+class Marker(Enum):
     BOARD_TOP_LEFT = 0
     BOARD_TOP_RIGHT = 1
     BOARD_BOTTOM_RIGHT = 2
@@ -40,7 +40,7 @@ class PieceColor(Enum):
 
 class Piece:
     def __init__(self, type, color, diameterInMm):
-        self.markerId = Markers[f'{color.name}_{type.name}'].value
+        self.markerId = Marker[f'{color.name}_{type.name}'].value
         self.type = type
         self.color = color
         self.diameterInMm = diameterInMm
