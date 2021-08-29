@@ -1,6 +1,6 @@
 from enum import Enum
 
-
+import chess
 class Marker(Enum):
     BOARD_TOP_LEFT = 0
     BOARD_TOP_RIGHT = 1
@@ -39,15 +39,19 @@ class PieceColor(Enum):
 
 
 class Piece:
-    def __init__(self, type, color, diameterInMm):
+    def __init__(self, type : PieceType, color : PieceColor, diameterInMm):
         self.markerId = Marker[f'{color.name}_{type.name}'].value
         self.type = type
         self.color = color
         self.diameterInMm = diameterInMm
         if (type == PieceType.KNIGHT):
-            self.abbrev = self.color.name[0] + 'K'
+            self.abbrev = 'K'
         else:
-            self.abbrev = self.color.name[0] + self.type.name[0]
+            self.abbrev = self.type.name[0]
+        if (color == PieceColor.BLACK):
+            self.abbrev = self.abbrev.lower()
+        self.chessPiece : chess.Piece = chess.Piece.from_symbol(self.abbrev)
+        self.fullName = f'{self.color.name}_{self.type.name}'
         #print (self.abbrev)
         
         
@@ -80,3 +84,5 @@ def getCurrentBoardWidthInMm():
 if __name__ == "__main__":
     print(PieceType(10) == PieceType.PAWN)
     print(SET1_DICT[24].color == PieceColor.BLACK)
+    print(SET1_DICT[24].chessPiece.symbol())
+    print(SET1_DICT[24].fullName)

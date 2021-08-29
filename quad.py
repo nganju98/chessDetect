@@ -41,7 +41,8 @@ class Quad():
         else:
             cv2.polylines(img, self.polyCoords(), True, thickness=3, color=(255,255,255))
             piece : equipment.Piece = equipment.getCurrentSet()[self.pieces[0]]
-            cv2.putText(img, f'{self.name}::{piece.abbrev}', [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 1, color=(255,255,255), thickness=3, lineType=2)
+            #ids = ",".join(map(str,self.pieces))
+            cv2.putText(img, f'{self.name}-{piece.abbrev}', [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 1, color=(255,255,255), thickness=3, lineType=2)
 
 
     def scanPieces(self, points, ids):

@@ -2,7 +2,7 @@
 import cv2
 import cv2.aruco as aruco
 import numpy as np
-
+import equipment
 
 def getArucoVars():
     markerSize = 4
@@ -36,11 +36,11 @@ def getSizeInPixels(desiredSizeInMm, dpi = 300):
 def rint(input):
     return np.int32( np.round(input))
 
-def generatePiece(markerId, markerSizeInMm, pieceSizeInMm, bufferSizeInMm = 1):
+def generatePiece(piece : equipment.Piece, markerSizeInMm, bufferSizeInMm = 1):
 
     markerSizeInPixels = rint(getSizeInPixels(markerSizeInMm))
     
-    pieceSizeInPixels = getSizeInPixels(pieceSizeInMm)
+    pieceSizeInPixels = getSizeInPixels(piece.diameterInMm)
     bufferSize = getSizeInPixels(bufferSizeInMm)
 
     imgSize = rint(2*markerSizeInPixels + 4 * bufferSize + pieceSizeInPixels)
@@ -50,10 +50,11 @@ def generatePiece(markerId, markerSizeInMm, pieceSizeInMm, bufferSizeInMm = 1):
     img.fill(255)
     arucoDict, _ = getArucoVars()
     cv2.circle(img, [rint(imgSize/2), rint(imgSize/2)], rint(pieceSizeInPixels/2), color=(0,0,0))
-
+    cv2.putText(img, f'{piece.fullName}:{piece.diameterInMm}mm', [rint(imgSize/2 - pieceSizeInPixels/4), rint(imgSize/2)], 
+        cv2.FONT_HERSHEY_SIMPLEX, .5, color=(0,0,0), thickness=1, lineType=cv2.LINE_AA)
 
     arucoImg = np.zeros((markerSizeInPixels, markerSizeInPixels), dtype="uint8") 
-    cv2.aruco.drawMarker(arucoDict, markerId, markerSizeInPixels, arucoImg, 1)
+    cv2.aruco.drawMarker(arucoDict, piece.markerId, markerSizeInPixels, arucoImg, 1)
     
     y = rint(bufferSize)
     x = rint(imgSize / 2 - markerSizeInPixels / 2)
@@ -81,8 +82,10 @@ def generatePiece(markerId, markerSizeInMm, pieceSizeInMm, bufferSizeInMm = 1):
 
 if __name__ == "__main__":
     markerSizeInMm = 7
-    pieceSizeInMm = 30
-    img = generatePiece(10, markerSizeInMm, pieceSizeInMm)
-    cv2.imwrite("./images/pawn.png", img)
-    cv2.imshow("ArUCo Tag", img)
-    cv2.waitKey(0)
+
+    for piece in equipment.SET1:
+        img = generatePiece(piece, markerSizeInMm)
+        cv2.imwrite(f'./images/{piece.fullName}.png', img)
+   
+        cv2.imshow("ArUCo Tag", img)
+        cv2.waitKey(0)

@@ -68,7 +68,7 @@ class Runner:
 
     def processBoard(img, profiler):
         bboxs, ids = findArucoMarkers(img)
-        #profiler.log(2, "Found markers")
+        profiler.log(2, "Found markers")
         
         # if (board is None or not board.calibrateSuccess or
         #     board.cornersChanged(bboxs, ids) or
@@ -76,13 +76,13 @@ class Runner:
         board = Board(equipment.getCurrentSet(), equipment.getCurrentBoardWidthInMm())
         #print("procesing board")
         board.calibrate(img, bboxs, ids, False)
-        #profiler.log(3, "Calibrate")
+        profiler.log(3, "Calibrate")
                 
         if (board.calibrateSuccess):
             #print(board.ageInMs())
             board.markPieces(bboxs, ids, img)
             board.drawOrigSquares(img)
-        #profiler.log(4, "Find pieces")
+        profiler.log(4, "Find pieces")
         return board
 
                

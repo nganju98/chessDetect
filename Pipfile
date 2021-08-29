@@ -9,6 +9,8 @@ imutils = "*"
 Shapely = "*"
 matplotlib = "*"
 beepy = "*"
+chess = "*"
+cairosvg = "*"
 
 [dev-packages]
 
