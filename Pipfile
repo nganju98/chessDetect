@@ -9,6 +9,7 @@ imutils = "*"
 shapely = "*"
 scipy = "*"
 matplotlib = "*"
+beepy = "*"
 
 [dev-packages]
 

@@ -9,11 +9,12 @@ import datetime
 import time
 from board import Board
 import equipment
-
+import beepy
 from boardFinder import BoardFinder
 import threading
 from aruco import findArucoMarkers
 from profiler import Profiler
+
 class Runner:
         
     def __init__(self):
@@ -21,6 +22,7 @@ class Runner:
         self.zoomX = 0
         self.zoomY = 0
         self.zoomFactor = 8
+        self.buttonLocations = None
         
 
     def doKeys(self, k, cap, img, profiler:Profiler):
@@ -83,6 +85,54 @@ class Runner:
         #profiler.log(4, "Find pieces")
         return board
 
+               
+
+    def processButtons(self, img, profiler):
+        ids = None
+        if self.buttonLocations is None:
+            bboxs, ids = findArucoMarkers(img)
+            ids = ids.flatten()
+            marks = []
+            whiteButtons = BoardFinder.markerFromId(bboxs, ids, equipment.Marker.WHITE_BUTTON)
+            marks.extend(whiteButtons)
+            blackButtons = BoardFinder.markerFromId(bboxs, ids, equipment.Marker.BLACK_BUTTON)
+            marks.extend(blackButtons)
+            self.buttonLocations =[]
+           
+            for mark in marks:
+                polygon = Polygon(mark)
+                bufferSize = (polygon.bounds[2] - polygon.bounds[0]) / 2
+                rect = [
+                    int(max(0, polygon.bounds[0] - bufferSize)), 
+                    int(max(0, polygon.bounds[1] - bufferSize)),
+                    int(min(img.shape[1] - 1, polygon.bounds[2] + bufferSize)),
+                    int(min(img.shape[0] - 1, polygon.bounds[3] + bufferSize))]
+                self.buttonLocations.append(rect)
+
+        else:
+            ids = []
+            for location in self.buttonLocations:
+                subImg = img[location[1]:location[3],location[0]:location[2]]
+                bboxs, subIds = findArucoMarkers(subImg)
+                if (subIds is not None):
+                    ids.extend(subIds.flatten())
+                cv2.rectangle(img, [location[0], location[1]], [location[2], location[3]], color=(0,255,0), thickness=2)
+
+        result = None
+        if (len(ids) > 0):
+            if (equipment.Marker.WHITE_BUTTON.value not in ids):
+                result = equipment.Marker.WHITE_BUTTON
+                print('White button pressed')
+                threading.Thread(target=beepy.beep, args=("coin",)).start()
+            elif (equipment.Marker.BLACK_BUTTON.value not in ids):
+                result = equipment.Marker.BLACK_BUTTON
+                print('Black button pressed')
+                threading.Thread(target=beepy.beep, args=("coin",)).start()
+        else:
+            print("Couldn't find buttons")
+
+        return result    
+
     def showImage(self, img, fps):
         show = None
         if (self.zoom):
@@ -115,17 +165,21 @@ class Runner:
         cfps = cap.get(cv2.CAP_PROP_FPS)
         print (f'capture fps = {cfps}')
         cap.read() # warm up camera
+        time.sleep(1)
         #cap.set(cv2.CAP_PROP_FPS, 30)
         fps = FPS(5).start()
-
+        buttonLocations = None
         while True:
             profiler = Profiler()
             ret, img = cap.read()
             profiler.log(1, "Read the frame")
+
+            self.processButtons(img, profiler)
+            profiler.log(2, "processed buttons")
             # x = threading.Thread(target=self.processBoard, args=(img,None))
             # x.start()
             #profiler.log(12, "Kicked off thread")
-            Runner.processBoard(img, profiler)
+            #Runner.processBoard(img, profiler)
             self.showImage(img, fps)
             profiler.log(4, "Show image")
             

@@ -16,15 +16,18 @@ class BoardFinder:
     def idsPresent(ids):
         return (ids is not None and 0 in ids and 1 in ids and 2 in ids and 3 in ids)
 
-    def cornerFromBbox(bboxs, idAry, marker : Marker):
+    def markerFromId(bboxs, idAry, marker: Marker):
         indexes = np.where(idAry == marker.value)[0]
         marks = []
         for index in indexes:
-            mark = bboxs[index][0][0]
+            mark = bboxs[index][0]
             marks.append(mark)
+        return marks
 
+    def cornerFromBbox(bboxs, idAry, marker : Marker):
+        marks = BoardFinder.markerFromId(bboxs, idAry, marker)
         if (len(marks) == 1):
-            return marks[0]
+            return marks[0][0]
         else:
             print(f'There are {len(marks)} {marker.name} markers: {marks}')
             return None
