@@ -119,7 +119,7 @@ class Runner:
                 cv2.rectangle(img, [location[0], location[1]], [location[2], location[3]], color=(0,255,0), thickness=2)
 
         result = None
-        if (len(ids) > 0):
+        if (len(ids) > 1):
             if (equipment.Marker.WHITE_BUTTON.value not in ids):
                 result = equipment.Marker.WHITE_BUTTON
                 print('White button pressed')

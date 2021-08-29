@@ -22,7 +22,8 @@ if __name__ == "__main__":
     g = Game()
     g.game.set_piece_at(chess.parse_square('d2'), chess.Piece.from_symbol('K'))
     g.game.push_uci("d2d3")
-    i = chess.svg.board(g.game)
+    
+    i = chess.svg.board(g.game, squares=[chess.E2], arrows=[(chess.E5, chess.E5)], lastmove=g.game.peek())
     print(i)
     png = svg2png(bytestring=i)
 
