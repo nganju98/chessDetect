@@ -179,7 +179,7 @@ class Runner:
             # x = threading.Thread(target=self.processBoard, args=(img,None))
             # x.start()
             #profiler.log(12, "Kicked off thread")
-            #Runner.processBoard(img, profiler)
+            Runner.processBoard(img, profiler)
             self.showImage(img, fps)
             profiler.log(4, "Show image")
             

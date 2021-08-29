@@ -59,22 +59,6 @@ class BoardFinder:
         else:
             print("Didn't find all corners")
             return None
-    
-    def findButtons(bboxs, ids):
-        if (ids is None):
-            return None, None
-        idAry = ids.flatten()
-        whiteIds = np.where(idAry == Marker.WHITE_BUTTON.value)[0]
-        whites = []
-        for id in whiteIds:
-            whites.append(bboxs[id][0])
-        
-        blackIds = np.where(idAry == Marker.BLACK_BUTTON.value)[0]
-        blacks = []
-        for id in blackIds:
-            blacks.append(bboxs[id][0])
-        
-        return whites, blacks
 
     def between(p1, p2, distance):
         x = (p2[0] - p1[0]) * distance + p1[0]

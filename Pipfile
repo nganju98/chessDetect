@@ -6,8 +6,7 @@ name = "pypi"
 [packages]
 opencv-contrib-python = "*"
 imutils = "*"
-shapely = "*"
-scipy = "*"
+Shapely = "*"
 matplotlib = "*"
 beepy = "*"
 
