@@ -167,23 +167,32 @@ class Runner:
 
     def updateGame(self, board: Board, profiler: Profiler):
         
-        gameChanged = False
+        empty = chess.STATUS_EMPTY in self.game.status()
+        fromSquares = []
+        toSquares = []
         for row in board.origSquares:
             for square in row:
                 if (len(square.pieces) > 0):
                     piece : equipment.Piece = equipment.getCurrentSet()[square.pieces[0]].chessPiece
                     if (piece !=  self.game.piece_at(square.chessSquare)):
-                        self.game.set_piece_at(chess.parse_square(square.name), piece)
-                        gameChanged = True
+                        if (empty):
+                            self.game.set_piece_at(chess.parse_square(square.name), piece)
+                        else:
+                            toSquares.append(square)
                 else:
                     if (self.game.piece_at(square.chessSquare) is not None):
-                        self.game.remove_piece_at(chess.parse_square(square.name))
-                        gameChanged = True
+                        fromSquares.append(square)
+           
         profiler.log(51, "Updated game")
 
-        if (gameChanged):
-            #g.game.push_uci("d2d3")
-            i = chess.svg.board(self.game, squares=[chess.E2], arrows=[(chess.E5, chess.E5)])
+        if (empty or len(fromSquares) > 0 or len(toSquares) > 0):
+            lastmove = None
+            if (len(fromSquares) == 1 and len(toSquares) == 1):
+                uciMove = f'{fromSquares[0].name}{toSquares[0].name}'
+                print(f'Adding move - {uciMove}')
+                self.game.push_uci(uciMove)
+                lastmove = self.game.peek()
+            i = chess.svg.board(self.game, squares=[chess.E2], arrows=[(chess.E5, chess.E5)], lastmove=lastmove)
             profiler.log(52, "Generated SVG")
             #print(i)
             png = svg2png(bytestring=i)
@@ -194,7 +203,8 @@ class Runner:
             cv_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGBA2BGRA)
             profiler.log(53, "Made image")
             cv2.imshow("chessboard", cv_img)
-
+        else:
+            print(f'Error: {len(fromSquares)} have disappeared pieces and {len(toSquares)} have appared pieces')
 
     def run(self, pieceSet, boardWidthInMm):
         cap = cv2.VideoCapture(0)
@@ -204,7 +214,7 @@ class Runner:
         cfps = cap.get(cv2.CAP_PROP_FPS)
         print (f'capture fps = {cfps}')
         cap.read() # warm up camera
-        time.sleep(2)
+        #time.sleep(2)
         #cap.set(cv2.CAP_PROP_FPS, 30)
         fps = FPS(5).start()
         lastCalibratedBoard = None

@@ -27,8 +27,11 @@ if __name__ == "__main__":
     print(tcl.call("info", "patchlevel"))
 
     g = Game()
-    g.game.set_piece_at(chess.parse_square('d2'), chess.Piece.from_symbol('K'))
-    g.game.push_uci("d2d3")
+    print(g.game.status())
+    fen = '8/8/4B3/8/4P3/2P5/8/8 w - - 1 1'
+    g.game.set_fen(fen)
+    #g.game.set_piece_at(chess.parse_square('e2'), chess.Piece.from_symbol('P'))
+    g.game.push_uci("e6h2")
     
     i = chess.svg.board(g.game, squares=[chess.E2], arrows=[(chess.E5, chess.E5)], lastmove=g.game.peek())
     #print(i)
