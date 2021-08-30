@@ -14,8 +14,8 @@ from boardFinder import BoardFinder
 
 class Board:
         
-    def __init__(self, pieces, boardWidthInMm):
-        self.pieces = pieces
+    def __init__(self, pieceSet, boardWidthInMm):
+        self.pieceSet = pieceSet
         self.boardWidthInMm = boardWidthInMm
 
     def calibrate(self, img, lastBoard : 'Board', profiler, draw=True):
@@ -63,7 +63,7 @@ class Board:
         age : datetime.timedelta = datetime.datetime.now() - self.processed
         return age.total_seconds() * 1000
 
-    def markPieces(self, img, draw=True):
+    def detectPieces(self, img, draw=True):
         
         bboxs, ids = aruco.findArucoMarkersInPolygon(img, Polygon(self.rect), self.pixelsPerMm * 5)
         
@@ -74,10 +74,10 @@ class Board:
         pointList = []
         validIds = []
         for (markerCorner, markerId) in zip(bboxs, idAry):
-            if (markerId in self.pieces):
+            if (markerId in self.pieceSet):
                 corners = markerCorner.reshape((4, 2))
                 
-                piece : Piece = self.pieces[markerId]
+                piece : Piece = self.pieceSet[markerId]
                 pixelLength = self.pixelsPerMm * (piece.diameterInMm / 2)
                 pieceCenter = BoardFinder.getPieceCenter(corners, pixelLength)
                 if draw:

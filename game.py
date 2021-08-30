@@ -31,8 +31,12 @@ if __name__ == "__main__":
     fen = '8/8/4B3/8/4P3/2P5/8/8 w - - 1 1'
     g.game.set_fen(fen)
     #g.game.set_piece_at(chess.parse_square('e2'), chess.Piece.from_symbol('P'))
-    g.game.push_uci("e6h2")
-    
+    g.game.push_uci("e6h3")
+    x = g.game.legal_moves
+    print(x.count)
+    print(x[0])
+    for move in x:
+        print (move)
     i = chess.svg.board(g.game, squares=[chess.E2], arrows=[(chess.E5, chess.E5)], lastmove=g.game.peek())
     #print(i)
     png = svg2png(bytestring=i)

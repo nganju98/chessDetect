@@ -165,33 +165,37 @@ class Runner:
             lineType=lineType)
         cv2.imshow('img',show)
 
-    def updateGame(self, board: Board, profiler: Profiler):
+    def updateGame(self, board: Board, gameStarted:bool, profiler: Profiler):
         
-        empty = chess.STATUS_EMPTY in self.game.status()
+        #empty = chess.STATUS_EMPTY in self.game.status()
         fromSquares = []
         toSquares = []
         for row in board.origSquares:
             for square in row:
-                if (len(square.pieces) > 0):
-                    piece : equipment.Piece = equipment.getCurrentSet()[square.pieces[0]].chessPiece
-                    if (piece !=  self.game.piece_at(square.chessSquare)):
-                        if (empty):
-                            self.game.set_piece_at(chess.parse_square(square.name), piece)
-                        else:
-                            toSquares.append(square)
+                piece : equipment.Piece = square.bestPiece()
+                if (piece is not None):
+                    if (piece.chessPiece !=  self.game.piece_at(square.chessSquare)):
+                        toSquares.append(square)
+                        if(not gameStarted):
+                            self.game.set_piece_at(square.chessSquare, piece.chessPiece)
                 else:
                     if (self.game.piece_at(square.chessSquare) is not None):
                         fromSquares.append(square)
+                        if(not gameStarted):
+                            self.game.remove_piece_at(square.chessSquare)
            
         profiler.log(51, "Updated game")
 
-        if (empty or len(fromSquares) > 0 or len(toSquares) > 0):
+        if (len(fromSquares) > 0 or len(toSquares) > 0):
             lastmove = None
-            if (len(fromSquares) == 1 and len(toSquares) == 1):
-                uciMove = f'{fromSquares[0].name}{toSquares[0].name}'
-                print(f'Adding move - {uciMove}')
-                self.game.push_uci(uciMove)
-                lastmove = self.game.peek()
+            if (gameStarted):
+                if (len(fromSquares) == 1 and len(toSquares) == 1):
+                    uciMove = f'{fromSquares[0].name}{toSquares[0].name}'
+                    print(f'Adding move - {uciMove}')
+                    self.game.push_uci(uciMove)
+                    lastmove = self.game.peek()
+                else:
+                    print(f'Error: {len(fromSquares)} have disappeared pieces and {len(toSquares)} have appared pieces')
             i = chess.svg.board(self.game, squares=[chess.E2], arrows=[(chess.E5, chess.E5)], lastmove=lastmove)
             profiler.log(52, "Generated SVG")
             #print(i)
@@ -203,8 +207,8 @@ class Runner:
             cv_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGBA2BGRA)
             profiler.log(53, "Made image")
             cv2.imshow("chessboard", cv_img)
-        else:
-            print(f'Error: {len(fromSquares)} have disappeared pieces and {len(toSquares)} have appared pieces')
+       
+            
 
     def run(self, pieceSet, boardWidthInMm):
         cap = cv2.VideoCapture(0)
@@ -214,10 +218,11 @@ class Runner:
         cfps = cap.get(cv2.CAP_PROP_FPS)
         print (f'capture fps = {cfps}')
         cap.read() # warm up camera
-        #time.sleep(2)
+        time.sleep(2)
         #cap.set(cv2.CAP_PROP_FPS, 30)
         fps = FPS(5).start()
         lastCalibratedBoard = None
+        gameStarted = False
         while True:
             profiler = Profiler()
             ret, img = cap.read()
@@ -230,13 +235,13 @@ class Runner:
             profiler.log(3, "Calibrated board")
             if(board.calibrateSuccess):
                 lastCalibratedBoard = board
-                board.drawOrigSquares(img)
                 profiler.log(4, "Drew squares")
-                if (buttonPushed is not None):
-                    board.markPieces(img)
+                if (buttonPushed is not None or not gameStarted):
+                    board.detectPieces(img)
                     profiler.log(60, "Processed full board")
-                    self.updateGame(board, profiler)
+                    self.updateGame(board, gameStarted, profiler)
                     profiler.log(61, "Updated game")
+                board.drawOrigSquares(img)
             
             self.showImage(img, fps)
             profiler.log(4, "Show image")
