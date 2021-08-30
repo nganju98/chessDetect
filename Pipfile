@@ -10,8 +10,7 @@ Shapely = "*"
 matplotlib = "*"
 beepy = "*"
 chess = "*"
-cairosvg = "*"
-cd = "*"
+CairoSVG = "*"
 
 [dev-packages]
 
