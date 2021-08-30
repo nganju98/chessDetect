@@ -63,6 +63,8 @@ class Runner:
             self.zoomX = min(self.zoomX, int( img.shape[1] - img.shape[1]/self.zoomFactor ))
         if k == ord('p'):
             profiler.output()
+        if k == ord('f'):
+            print(cap.get(cv2.CAP_PROP_FOCUS))
 
         if k == 27:
             return True
@@ -230,9 +232,9 @@ class Runner:
             profiler.log(4, "Show image")
             
             k = cv2.waitKey(1) & 0xff
-            # quit = self.doKeys(k, cap, img, profiler)
-            # if (quit):
-            #     break
+            quit = self.doKeys(k, cap, img, profiler)
+            if (quit):
+                break
             profiler.log(6, "Did keys")
             fps.updateAndPrintAndReset(profiler)
 
