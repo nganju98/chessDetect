@@ -1,5 +1,6 @@
 
 import cv2
+from shapely.geometry.polygon import Polygon
 import cv2.aruco as aruco
 import numpy as np
 import equipment
@@ -10,9 +11,9 @@ def getArucoVars():
     key = getattr(aruco, f'DICT_{markerSize}X{markerSize}_{totalMarkers}')
     arucoDict = aruco.Dictionary_get(key)
     arucoParam = aruco.DetectorParameters_create()
-    arucoParam.minMarkerPerimeterRate=.02
-    arucoParam.maxErroneousBitsInBorderRate=.6
-    arucoParam.errorCorrectionRate=1
+    #arucoParam.minMarkerPerimeterRate=.02
+    ##arucoParam.maxErroneousBitsInBorderRate=.6
+    #arucoParam.errorCorrectionRate=1
     return arucoDict, arucoParam
 
 
@@ -26,6 +27,24 @@ def findArucoMarkers(img, draw=True):
         aruco.drawDetectedMarkers(img, bboxs, ids) 
     return (bboxs, ids)
 
+def findArucoMarkersInPolygon(img, polygon : Polygon, bufferInPixels):
+
+    rect = [
+        int(polygon.bounds[0] - bufferInPixels), 
+        int(polygon.bounds[1] - bufferInPixels),
+        int(polygon.bounds[2] + bufferInPixels),
+        int(polygon.bounds[3] + bufferInPixels)]
+    xOffset = rect[0]
+    yOffset = rect[1]
+    bboxs, ids = findArucoMarkers(img[rect[1]:rect[3], rect[0]:rect[2]])
+    for bbox in bboxs:
+            for box in bbox:
+                for point in box:
+                    point[0] = point[0] + xOffset
+                    point[1] = point[1] + yOffset
+                    
+
+    return bboxs, ids
 
 def getSizeInPixels(desiredSizeInMm, dpi = 300):
     mmPerInch = 25.4

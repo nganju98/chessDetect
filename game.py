@@ -7,24 +7,31 @@ import numpy as np
 from PIL import Image
 from cairosvg import svg2png
 import cv2
+import tkinter
+
+
 
 
 class Game:
     def __init__(self):
         self.turn = equipment.PieceColor.WHITE
-        self.game = chess.Board()
+        self.game = chess.Board.empty()
         self.game.clear()
 
 
 
 
 if __name__ == "__main__":
+
+    tcl = tkinter.Tcl()
+    print(tcl.call("info", "patchlevel"))
+
     g = Game()
     g.game.set_piece_at(chess.parse_square('d2'), chess.Piece.from_symbol('K'))
     g.game.push_uci("d2d3")
     
     i = chess.svg.board(g.game, squares=[chess.E2], arrows=[(chess.E5, chess.E5)], lastmove=g.game.peek())
-    print(i)
+    #print(i)
     png = svg2png(bytestring=i)
 
     pil_img = Image.open(BytesIO(png)).convert('RGBA')

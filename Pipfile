@@ -11,6 +11,7 @@ matplotlib = "*"
 beepy = "*"
 chess = "*"
 cairosvg = "*"
+cd = "*"
 
 [dev-packages]
 

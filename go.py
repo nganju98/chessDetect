@@ -1,8 +1,12 @@
+from PIL import Image
+from cairosvg import svg2png
+import numpy as np
+from game import Game
 import cv2
 
-import os
 from fps import FPS
 import imutils
+from io import BytesIO
 
 from shapely.geometry import Polygon
 import datetime
@@ -14,6 +18,7 @@ from boardFinder import BoardFinder
 import threading
 from aruco import findArucoMarkers
 from profiler import Profiler
+import chess
 
 class Runner:
         
@@ -23,6 +28,7 @@ class Runner:
         self.zoomY = 0
         self.zoomFactor = 8
         self.buttonLocations = None
+        self.game = chess.Board.empty()
         
 
     def doKeys(self, k, cap, img, profiler:Profiler):
@@ -66,24 +72,24 @@ class Runner:
         
                 
 
-    def processBoard(img, profiler):
-        bboxs, ids = findArucoMarkers(img)
-        profiler.log(2, "Found markers")
+    # def processBoard(img, lastSeenCorners, calibrateOnly):
+    #     #bboxs, ids = findArucoMarkers(img)
+    #     profiler.log(2, "Found markers")
         
-        # if (board is None or not board.calibrateSuccess or
-        #     board.cornersChanged(bboxs, ids) or
-        # (BoardFinder.idsPresent(ids) and board.ageInMs() > 4000)):
-        board = Board(equipment.getCurrentSet(), equipment.getCurrentBoardWidthInMm())
-        #print("procesing board")
-        board.calibrate(img, bboxs, ids, False)
-        profiler.log(3, "Calibrate")
+    #     # if (board is None or not board.calibrateSuccess or
+    #     #     board.cornersChanged(bboxs, ids) or
+    #     # (BoardFinder.idsPresent(ids) and board.ageInMs() > 4000)):
+    #     board = Board(equipment.getCurrentSet(), equipment.getCurrentBoardWidthInMm())
+    #     #print("procesing board")
+    #     board.calibrate(img, bboxs, ids, False)
+    #     profiler.log(3, "Calibrate")
                 
-        if (board.calibrateSuccess):
-            #print(board.ageInMs())
-            board.markPieces(bboxs, ids, img)
-            board.drawOrigSquares(img)
-        profiler.log(4, "Find pieces")
-        return board
+    #     if (board.calibrateSuccess):
+    #         #print(board.ageInMs())
+    #         board.markPieces(bboxs, ids, img)
+    #         board.drawOrigSquares(img)
+    #     profiler.log(4, "Find pieces")
+    #     return board
 
                
 
@@ -157,7 +163,38 @@ class Runner:
             lineType=lineType)
         cv2.imshow('img',show)
 
-    def run(self):
+    def updateGame(self, board: Board, profiler: Profiler):
+        
+        gameChanged = False
+        for row in board.origSquares:
+            for square in row:
+                if (len(square.pieces) > 0):
+                    piece : equipment.Piece = equipment.getCurrentSet()[square.pieces[0]].chessPiece
+                    if (piece !=  self.game.piece_at(square.chessSquare)):
+                        self.game.set_piece_at(chess.parse_square(square.name), piece)
+                        gameChanged = True
+                else:
+                    if (self.game.piece_at(square.chessSquare) is not None):
+                        self.game.remove_piece_at(chess.parse_square(square.name))
+                        gameChanged = True
+        profiler.log(51, "Updated game")
+
+        if (gameChanged):
+            #g.game.push_uci("d2d3")
+            i = chess.svg.board(self.game, squares=[chess.E2], arrows=[(chess.E5, chess.E5)])
+            profiler.log(52, "Generated SVG")
+            #print(i)
+            png = svg2png(bytestring=i)
+            profiler.log(52, "Made png from svg")
+            
+            pil_img = Image.open(BytesIO(png)).convert('RGBA')
+            
+            cv_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGBA2BGRA)
+            profiler.log(53, "Made image")
+            cv2.imshow("chessboard", cv_img)
+
+
+    def run(self, pieceSet, boardWidthInMm):
         cap = cv2.VideoCapture(0)
         cap.set(3, 3264)
         cap.set(4, 2448)
@@ -165,34 +202,42 @@ class Runner:
         cfps = cap.get(cv2.CAP_PROP_FPS)
         print (f'capture fps = {cfps}')
         cap.read() # warm up camera
-        time.sleep(1)
+        time.sleep(2)
         #cap.set(cv2.CAP_PROP_FPS, 30)
         fps = FPS(5).start()
-        buttonLocations = None
+        lastCalibratedBoard = None
         while True:
             profiler = Profiler()
             ret, img = cap.read()
             profiler.log(1, "Read the frame")
 
-            self.processButtons(img, profiler)
+            buttonPushed = self.processButtons(img, profiler)
             profiler.log(2, "processed buttons")
-            # x = threading.Thread(target=self.processBoard, args=(img,None))
-            # x.start()
-            #profiler.log(12, "Kicked off thread")
-            Runner.processBoard(img, profiler)
+            board = Board(pieceSet, boardWidthInMm)
+            board.calibrate(img, lastCalibratedBoard, profiler,False)
+            profiler.log(3, "Calibrated board")
+            if(board.calibrateSuccess):
+                lastCalibratedBoard = board
+                board.drawOrigSquares(img)
+                profiler.log(4, "Drew squares")
+                if (buttonPushed is not None):
+                    board.markPieces(img)
+                    profiler.log(60, "Processed full board")
+                    self.updateGame(board, profiler)
+                    profiler.log(61, "Updated game")
+            
             self.showImage(img, fps)
             profiler.log(4, "Show image")
             
-            
             k = cv2.waitKey(1) & 0xff
-            quit = self.doKeys(k, cap, img, profiler)
-            if (quit):
-                break
-            profiler.log(5, "Did keys")
+            # quit = self.doKeys(k, cap, img, profiler)
+            # if (quit):
+            #     break
+            profiler.log(6, "Did keys")
             fps.updateAndPrintAndReset(profiler)
 
         cap.release()
         cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    Runner().run()
+    Runner().run(equipment.getCurrentSet(), equipment.getCurrentBoardWidthInMm())

@@ -7,6 +7,7 @@ from timeit import default_timer as timer
 from quad import Quad
 import math
 from equipment import Marker
+import aruco
 
 
 def rint(input):
@@ -27,7 +28,7 @@ class BoardFinder:
     def cornerFromBbox(bboxs, idAry, marker : Marker):
         marks = BoardFinder.markerFromId(bboxs, idAry, marker)
         if (len(marks) == 1):
-            return marks[0][0]
+            return marks[0]
         else:
             print(f'There are {len(marks)} {marker.name} markers: {marks}')
             return None
@@ -49,13 +50,13 @@ class BoardFinder:
                 print('failed to calibrate')
                 return None
             else: 
-                p : Polygon = Polygon([tl, tr, br, bl])
+                p : Polygon = Polygon([tl[0], tr[0], br[0], bl[0]])
                 totalArea = imgShape[0]*imgShape[1]
                 boardPct = np.round( 100 * p.area / totalArea)
                 if (boardPct < 50):
                     print (f'board area too small, {p.area} pixels is only {boardPct} of total image')
                 
-                return np.asarray(rect, dtype=np.float32)
+                return rect
         else:
             print("Didn't find all corners")
             return None
@@ -151,5 +152,25 @@ class BoardFinder:
         center = [bottomCenter[0] + xDist, bottomCenter[1] + yDist]
         return center
 
+    def findCornersAtLastLocation(img, lastSeenCorners, pixelsPerMm):
+        cornersFound = 0
+        validIds = [Marker.BOARD_TOP_LEFT.value, Marker.BOARD_TOP_RIGHT.value, Marker.BOARD_BOTTOM_LEFT.value,
+            Marker.BOARD_BOTTOM_RIGHT.value]
+        for corner in lastSeenCorners:
+
+            polygon = Polygon(corner)
+            bufferSize = 1 * pixelsPerMm # 1mm buffer
+            rect = [
+                int(polygon.bounds[0] - bufferSize), 
+                int(polygon.bounds[1] - bufferSize),
+                int(polygon.bounds[2] + bufferSize),
+                int(polygon.bounds[3] + bufferSize)]
+            bbox, id = aruco.findArucoMarkers(img[rect[1]:rect[3], rect[0]:rect[2]])
+            #cv2.rectangle(img, [rect[0], rect[1]], [rect[2], rect[3]], color=(0,0,255), thickness=2)
+            if (id is not None):
+                id = id.flatten()
+                if (len(id) == 1 and id[0] in validIds):
+                    cornersFound += 1
+        return cornersFound
 
 x = BoardFinder.getPieceCenter([[0, 103], [0,0],[7,104], [4, 100]], 75)

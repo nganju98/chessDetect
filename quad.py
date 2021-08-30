@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import matplotlib.path as mpltPath
 import equipment
+import chess
 
 class Quad():
     def __init__(self, tl, tr, br, bl, name):
@@ -12,6 +13,7 @@ class Quad():
         self.name = name
         self.pieces = []
         self.path = mpltPath.Path([tl, tr, br, bl])
+        self.chessSquare = chess.parse_square(name)
     
     def coords(self):
         return np.array([self.tl, self.tr, self.br, self.bl])
