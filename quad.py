@@ -12,7 +12,7 @@ class Quad():
         self.br = br
         self.bl = bl
         self.name = name
-        self.pieces = {}
+        self.pieceCounts = {}
         self.path = mpltPath.Path([tl, tr, br, bl])
         self.chessSquare = chess.parse_square(name)
     
@@ -49,21 +49,21 @@ class Quad():
             cv2.putText(img, f'{self.name}-{piece.abbrev}', [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 1, color=(255,255,255), thickness=3, lineType=2)
 
     def bestPiece(self) -> equipment.Piece:
-        if (len(self.pieces) == 0):
+        if (len(self.pieceCounts) == 0):
             return None
         max = 0
         maxKey = -1
-        for key, val in self.pieces.items():
+        for key, val in self.pieceCounts.items():
             if (val > max):
                 max = val
                 maxKey = key
         return equipment.getCurrentSet()[maxKey]
 
     def scanPieces(self, points, ids):
-        self.pieces=[]
+        self.pieceCounts=[]
         x = self.path.contains_points(points)
         if (True in x):
-            self.pieces = collections.Counter(ids[np.where(x == True)])
+            self.pieceCounts = collections.Counter(ids[np.where(x == True)])
         return x
 
 
