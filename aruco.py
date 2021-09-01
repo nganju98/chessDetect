@@ -27,13 +27,13 @@ def findArucoMarkers(img, draw=True):
         aruco.drawDetectedMarkers(img, bboxs, ids) 
     return (bboxs, ids)
 
-def findArucoMarkersInPolygon(img, polygon : Polygon, bufferInPixels):
+def findArucoMarkersInPolygon(img, polygon : Polygon, bufferInPixels, drawPolygon = False):
 
     rect = [
-        int(polygon.bounds[0] - bufferInPixels), 
-        int(polygon.bounds[1] - bufferInPixels),
-        int(polygon.bounds[2] + bufferInPixels),
-        int(polygon.bounds[3] + bufferInPixels)]
+        int(max(0, polygon.bounds[0] - bufferInPixels)), 
+        int(max(0, polygon.bounds[1] - bufferInPixels)),
+        int(min(img.shape[1] - 1, polygon.bounds[2] + bufferInPixels)),
+        int(min(img.shape[0] - 1, polygon.bounds[3] + bufferInPixels))]
     xOffset = rect[0]
     yOffset = rect[1]
     bboxs, ids = findArucoMarkers(img[rect[1]:rect[3], rect[0]:rect[2]])
