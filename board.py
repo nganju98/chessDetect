@@ -35,24 +35,8 @@ class Board:
             bboxs, ids = aruco.findArucoMarkers(img)
             self.corners = BoardFinder.findCorners(bboxs, ids, img.shape)
 
-
+        
         if (self.corners is not None):
-            
-            self.rect = np.asarray([self.corners[0][0], self.corners[1][0], 
-            self.corners[2][0], self.corners[3][0]], dtype=np.float32)
-            
-            avgLength = ((self.rect[1][0] - self.rect[0][0]) +
-                    (self.rect[2][0] - self.rect[3][0]) +
-                    (self.rect[3][1] - self.rect[0][1]) +
-                    (self.rect[2][1] - self.rect[1][1])) / 4
-            self.pixelsPerMm = avgLength/self.boardWidthInMm
-
-            warpedImg, warpMatrix, warpWidth, warpHeight = BoardFinder.getWarpBoard(img, self.rect, draw)
-            
-            warpedSquares = BoardFinder.getSquares(warpedImg, warpWidth, warpHeight, draw, draw)
-            _, inverseMatrix = cv2.invert(warpMatrix)
-            self.origSquares = BoardFinder.getOriginalSquares(inverseMatrix, warpedSquares)
-            profiler.log(81, "Found original squares")
             self.calibrateSuccess = True
         else:
             self.calibrateSuccess = False
@@ -63,10 +47,31 @@ class Board:
         age : datetime.timedelta = datetime.datetime.now() - self.processed
         return age.total_seconds() * 1000
 
-    def detectPieces(self, img, draw=True):
+    def detectPieces(self, img, profiler, draw=True):
         
+        if (self.corners is None):
+            raise RuntimeError("Attempt to detect pieces but self.corners is None")
+
+        self.rect = np.asarray([self.corners[0][0], self.corners[1][0], 
+        self.corners[2][0], self.corners[3][0]], dtype=np.float32)
+        
+        avgLength = ((self.rect[1][0] - self.rect[0][0]) +
+                (self.rect[2][0] - self.rect[3][0]) +
+                (self.rect[3][1] - self.rect[0][1]) +
+                (self.rect[2][1] - self.rect[1][1])) / 4
+        self.pixelsPerMm = avgLength/self.boardWidthInMm
+
+        warpedImg, warpMatrix, warpWidth, warpHeight = BoardFinder.getWarpBoard(img, self.rect, draw)
+        
+        warpedSquares = BoardFinder.getSquares(warpedImg, warpWidth, warpHeight, draw, draw)
+        _, inverseMatrix = cv2.invert(warpMatrix)
+        self.origSquares = BoardFinder.getOriginalSquares(inverseMatrix, warpedSquares)
+        profiler.log(81, "Found original squares")
+
         bboxs, ids = aruco.findArucoMarkersInPolygon(img, Polygon(self.rect), self.pixelsPerMm * 5)
         
+        profiler.log(82, "Detected arucos in board rectangle")
+
         if ids is None:
             return
         idAry = ids.flatten()
@@ -92,6 +97,8 @@ class Board:
             for row in self.origSquares:
                 for square in row:
                     square.scanPieces(pointAry, validIdsAry)
+
+        profiler.log(82, "Processed squares to find contained arucos")
 
 
     def drawOrigSquares(self, img):

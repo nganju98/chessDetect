@@ -99,6 +99,8 @@ class Runner:
         ids = None
         if self.buttonLocations is None:
             bboxs, ids = findArucoMarkers(img)
+            if (ids is None):
+                ids = np.empty([1,1])
             ids = ids.flatten()
             marks = []
             whiteButtons = BoardFinder.markerFromId(bboxs, ids, equipment.Marker.WHITE_BUTTON)
@@ -211,7 +213,7 @@ class Runner:
             
 
     def run(self, pieceSet, boardWidthInMm):
-        cap = cv2.VideoCapture(0)
+        cap = cv2.VideoCapture(2)
         cap.set(3, 3264)
         cap.set(4, 2448)
         cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
@@ -237,7 +239,7 @@ class Runner:
                 lastCalibratedBoard = board
                 profiler.log(4, "Drew squares")
                 if (buttonPushed is not None or not gameStarted):
-                    board.detectPieces(img)
+                    board.detectPieces(img, profiler, False)
                     profiler.log(60, "Processed full board")
                     self.updateGame(board, gameStarted, profiler)
                     profiler.log(61, "Updated game")
