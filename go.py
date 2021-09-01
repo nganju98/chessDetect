@@ -251,15 +251,16 @@ class Runner:
             if(board.calibrateSuccess):
                 lastCalibratedBoard = board
                 profiler.log(4, "Drew squares")
+                boardCounts = {}
                 if (processTurn or not gameStarted):
-                    board.detectPieces(img, profiler, False)
+                    boardCounts = board.detectPieces(img, profiler, False)
                     profiler.log(60, "Processed full board")
-                    resolved = self.updateGame(board, gameStarted, profiler)
-                    if (resolved):
-                        processTurn = False
+                    #resolved = self.updateGame(boardCounts, gameStarted, profiler)
+                    # if (resolved):
+                    #     processTurn = False
 
                     profiler.log(61, "Updated game")
-                board.drawOrigSquares(img)
+                board.drawOrigSquares(img, boardCounts, pieceSet)
             
             self.showImage(img, fps)
             profiler.log(4, "Show image")

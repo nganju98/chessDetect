@@ -68,14 +68,13 @@ class Board:
         if (self.corners is None or self.rect is None or self.pixelsPerMm is None or not self.calibrateSuccess):
             raise RuntimeError("Attempt to detect pieces but self.corners is None")
 
-        
-
         bboxs, ids = aruco.findArucoMarkersInPolygon(img, Polygon(self.rect), self.pixelsPerMm * 5)
         
         profiler.log(82, "Detected arucos in board rectangle")
 
         if ids is None:
-            return
+            ids = np.empty((0,0))
+            
         idAry = ids.flatten()
         
         pointList = []
@@ -92,21 +91,29 @@ class Board:
                     
                 pointList.append(pieceCenter)
                 validIds.append(markerId)
-                
-        if (len(pointList) > 0):
-            pointAry = np.asarray(pointList)
-            validIdsAry = np.asarray(validIds)
-            for row in self.origSquares:
-                for square in row:
-                    square.scanPieces(pointAry, validIdsAry)
 
-        profiler.log(82, "Processed squares to find contained arucos")
+        
+        if (len(pointList)== 0):
+            pass
 
-
-    def drawOrigSquares(self, img):
+        pointAry = np.asarray(pointList)
+        validIdsAry = np.asarray(validIds)
+        boardCounts = {} 
         for row in self.origSquares:
             for square in row:
-                square.draw(img)
+                squareCount = square.scanPieces(pointAry, validIdsAry)
+                boardCounts[square.name] = squareCount
+            
+        
+        profiler.log(82, "Processed squares to find contained arucos")
+        return boardCounts
+
+
+    def drawOrigSquares(self, img, boardCounts, pieceSet):
+        for row in self.origSquares:
+            for square in row:
+                pieceCounts = boardCounts[square.name] if square.name in boardCounts else []
+                square.draw(img, pieceCounts, pieceSet)
 
     # def cornersChanged(self, bboxs, ids):
     #     if (not BoardFinder.idsPresent(ids)):

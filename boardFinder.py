@@ -91,7 +91,7 @@ class BoardFinder:
             rowLabel = 8-i
             for j in range(0,8):
                 columnLabel = chr(97 + j)
-                s = Quad(points[i][j], points[i][j+1], points[i+1][j+1], points[i+1][j], f'{columnLabel}{rowLabel}')
+                s = Quad.createQuad(points[i][j], points[i][j+1], points[i+1][j+1], points[i+1][j], f'{columnLabel}{rowLabel}')
                 row.append(s)
                 if drawSquares:
                     cv2.polylines(warpedImg, s.polyCoords(), True, thickness=3, color=(0,0,255))
