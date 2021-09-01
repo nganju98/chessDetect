@@ -133,11 +133,11 @@ class Runner:
             if (equipment.Marker.WHITE_BUTTON.value not in ids):
                 result = equipment.Marker.WHITE_BUTTON
                 print('White button pressed')
-                threading.Thread(target=beepy.beep, args=("coin",)).start()
+                
+                    
             elif (equipment.Marker.BLACK_BUTTON.value not in ids):
                 result = equipment.Marker.BLACK_BUTTON
                 print('Black button pressed')
-                threading.Thread(target=beepy.beep, args=("coin",)).start()
         else:
             print("Couldn't find buttons")
 
@@ -209,6 +209,8 @@ class Runner:
             cv_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGBA2BGRA)
             profiler.log(53, "Made image")
             cv2.imshow("chessboard", cv_img)
+            
+        return True
        
             
 
@@ -225,12 +227,23 @@ class Runner:
         fps = FPS(5).start()
         lastCalibratedBoard = None
         gameStarted = False
+        buttonDepressed = False
+        processTurn = False
         while True:
             profiler = Profiler()
             ret, img = cap.read()
             profiler.log(1, "Read the frame")
 
             buttonPushed = self.processButtons(img, profiler)
+            if (buttonPushed is None):
+                buttonDepressed = False
+            else:
+                if (not buttonDepressed):
+                    threading.Thread(target=beepy.beep, args=("coin",)).start()
+                buttonDepressed = True
+                processTurn = True
+                gameStarted = True
+
             profiler.log(2, "processed buttons")
             board = Board(pieceSet, boardWidthInMm)
             board.calibrate(img, lastCalibratedBoard, profiler,False)
@@ -238,10 +251,13 @@ class Runner:
             if(board.calibrateSuccess):
                 lastCalibratedBoard = board
                 profiler.log(4, "Drew squares")
-                if (buttonPushed is not None or not gameStarted):
+                if (processTurn or not gameStarted):
                     board.detectPieces(img, profiler, False)
                     profiler.log(60, "Processed full board")
-                    self.updateGame(board, gameStarted, profiler)
+                    resolved = self.updateGame(board, gameStarted, profiler)
+                    if (resolved):
+                        processTurn = False
+
                     profiler.log(61, "Updated game")
                 board.drawOrigSquares(img)
             
