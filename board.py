@@ -10,6 +10,7 @@ import datetime
 from equipment import Marker, Piece
 from boardFinder import BoardFinder
 from quad import Quad
+from copy import deepcopy
 
 
 class Board:
@@ -27,7 +28,7 @@ class Board:
             profiler.log(81, "Tested last corners")
 
         if (cornersFound >= 2):        
-            self.corners = lastBoard.corners   
+            self.corners = deepcopy(lastBoard.corners)
             self.calibrateSuccess = True           
         else:
             print("Need to recalibrate corners")
