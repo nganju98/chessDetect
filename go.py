@@ -237,7 +237,7 @@ class Runner:
                 profiler.log(4, "Drew squares")
                 boardCounts = {}
                 if (processTurn or not gameStarted):
-                    boardCounts = board.detectPieces(img, profiler, False)
+                    boardCounts = board.detectPieces(img, profiler, True)
                     profiler.log(60, "Processed full board")
                     resolved = self.updateGame(boardCounts, gameStarted, pieceSet, profiler)
                     if (resolved):
