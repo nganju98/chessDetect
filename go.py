@@ -199,7 +199,7 @@ class Runner:
             
 
     def run(self, pieceSet, boardWidthInMm):
-        cap = cv2.VideoCapture(2)
+        cap = cv2.VideoCapture(0)
         cap.set(3, 3264)
         cap.set(4, 2448)
         cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
@@ -240,8 +240,9 @@ class Runner:
                     boardCounts = board.detectPieces(img, profiler, True)
                     profiler.log(60, "Processed full board")
                     resolved = self.updateGame(boardCounts, gameStarted, pieceSet, profiler)
-                    if (resolved):
+                    if (processTurn and resolved):
                         processTurn = False
+                        threading.Thread(target=beepy.beep, args=("ready",)).start()
 
                     profiler.log(61, "Updated game")
                 board.drawOrigSquares(img, boardCounts, pieceSet)

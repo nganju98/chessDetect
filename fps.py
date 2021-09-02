@@ -25,7 +25,7 @@ class FPS:
 
     def checkFPS(self):
         #print(f'frames={self._numFrames}, elapsed={self.elapsed()}, fps={self._numFrames/self.elapsed()}')
-        return self._numFrames/self.elapsed()
+        return (self._numFrames+1)/self.elapsed()
 
     def updateAndPrintAndReset(self, profiler = None):
         if (self.updateAndPrint(profiler)):

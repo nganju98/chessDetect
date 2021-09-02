@@ -120,7 +120,7 @@ if __name__ == "__main__":
               ('p', sections[2]),
               ('p', sections[3]),
               ('p', sections[4]),
-              ('P', sections[5])
+              ('p', sections[5])
     ]
 
 
@@ -146,7 +146,7 @@ if __name__ == "__main__":
         img = generatePiece(piece, markerSizeInMm, bufferSizeInMm, dpi)
         imageDict[piece.abbrev] = img
         
-        cv2.imwrite(f'./images/set2_{piece.fullName}.png', img)
+        #cv2.imwrite(f'./images/set2_{piece.fullName}.png', img)
    
         #cv2.imshow("ArUCo Tag", img)
         #cv2.waitKey(0)

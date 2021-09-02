@@ -72,31 +72,27 @@ SET1 = [
     Piece(PieceType.KING, PieceColor.BLACK, 41),
 ]
 
-SET1_DICT = {x.markerId: x for x in SET1}
-
 
 
 SET2 = [
-    Piece(PieceType.PAWN, PieceColor.WHITE, 20),
-    Piece(PieceType.BISHOP, PieceColor.WHITE, 23),
-    Piece(PieceType.KNIGHT, PieceColor.WHITE, 23),
-    Piece(PieceType.ROOK, PieceColor.WHITE, 23),
-    Piece(PieceType.QUEEN, PieceColor.WHITE, 30),
-    Piece(PieceType.KING, PieceColor.WHITE, 31),
+    Piece(PieceType.PAWN, PieceColor.WHITE, 19.5),
+    Piece(PieceType.BISHOP, PieceColor.WHITE, 22.5),
+    Piece(PieceType.KNIGHT, PieceColor.WHITE, 22.5),
+    Piece(PieceType.ROOK, PieceColor.WHITE, 22.5),
+    Piece(PieceType.QUEEN, PieceColor.WHITE, 29.5),
+    Piece(PieceType.KING, PieceColor.WHITE, 30.5),
 
-    Piece(PieceType.PAWN, PieceColor.BLACK, 20),
-    Piece(PieceType.BISHOP, PieceColor.BLACK, 23),
-    Piece(PieceType.KNIGHT, PieceColor.BLACK, 23),
-    Piece(PieceType.ROOK, PieceColor.BLACK, 23),
-    Piece(PieceType.QUEEN, PieceColor.BLACK, 30),
-    Piece(PieceType.KING, PieceColor.BLACK, 31),
+    Piece(PieceType.PAWN, PieceColor.BLACK, 19.5),
+    Piece(PieceType.BISHOP, PieceColor.BLACK, 22.5),
+    Piece(PieceType.KNIGHT, PieceColor.BLACK, 22.5),
+    Piece(PieceType.ROOK, PieceColor.BLACK, 22.5),
+    Piece(PieceType.QUEEN, PieceColor.BLACK, 29.5),
+    Piece(PieceType.KING, PieceColor.BLACK, 30.5),
 ]
-
-SET2_DICT = {x.markerId: x for x in SET1}
 
 
 def getCurrentSet():
-    return SET2_DICT
+    return {x.markerId: x for x in SET2}
 
 def getCurrentBoardWidthInMm():
     return 450
@@ -104,6 +100,6 @@ def getCurrentBoardWidthInMm():
 
 if __name__ == "__main__":
     print(PieceType(10) == PieceType.PAWN)
-    print(SET1_DICT[24].color == PieceColor.BLACK)
-    print(SET1_DICT[24].chessPiece.symbol())
-    print(SET1_DICT[24].fullName)
+    print(getCurrentSet()[24].color == PieceColor.BLACK)
+    print(getCurrentSet()[24].chessPiece.symbol())
+    print(getCurrentSet()[24].fullName)

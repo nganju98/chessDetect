@@ -150,6 +150,7 @@ class BoardFinder:
         xDist = rint( (bottomLeft[0] - topLeft[0]) * scale)
         yDist = rint((bottomLeft[1] - topLeft[1]) * scale)
         center = [bottomCenter[0] + xDist, bottomCenter[1] + yDist]
+        z = math.dist(bottomCenter, center)
         return center
 
     def findCornersAtLastLocation(img, lastSeenCorners, pixelsPerMm):
