@@ -9,7 +9,7 @@ from timeit import default_timer as timer
 import datetime
 from equipment import Marker, Piece
 from boardFinder import BoardFinder
-
+from quad import Quad
 
 
 class Board:
@@ -100,6 +100,7 @@ class Board:
         validIdsAry = np.asarray(validIds)
         boardCounts = {} 
         for row in self.origSquares:
+            square : Quad
             for square in row:
                 squareCount = square.scanPieces(pointAry, validIdsAry)
                 boardCounts[square.name] = squareCount
@@ -111,6 +112,7 @@ class Board:
 
     def drawOrigSquares(self, img, boardCounts, pieceSet):
         for row in self.origSquares:
+            square : Quad
             for square in row:
                 pieceCounts = boardCounts[square.name] if square.name in boardCounts else []
                 square.draw(img, pieceCounts, pieceSet)

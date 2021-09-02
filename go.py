@@ -1,3 +1,4 @@
+from quad import Quad
 from PIL import Image
 from cairosvg import svg2png
 import numpy as np
@@ -167,24 +168,28 @@ class Runner:
             lineType=lineType)
         cv2.imshow('img',show)
 
-    def updateGame(self, board: Board, gameStarted:bool, profiler: Profiler):
+    def updateGame(self, boardCounts:dict, gameStarted:bool, pieceSet : dict, profiler: Profiler):
         
         #empty = chess.STATUS_EMPTY in self.game.status()
         fromSquares = []
         toSquares = []
-        for row in board.origSquares:
-            for square in row:
-                piece : equipment.Piece = square.bestPiece()
-                if (piece is not None):
-                    if (piece.chessPiece !=  self.game.piece_at(square.chessSquare)):
-                        toSquares.append(square)
-                        if(not gameStarted):
-                            self.game.set_piece_at(square.chessSquare, piece.chessPiece)
-                else:
-                    if (self.game.piece_at(square.chessSquare) is not None):
-                        fromSquares.append(square)
-                        if(not gameStarted):
-                            self.game.remove_piece_at(square.chessSquare)
+
+        if len(boardCounts) != 64:
+            raise RuntimeError(f'Weird boardcounts, length={len(boardCounts)}')
+
+        for key, val in boardCounts.items():
+            piece = Quad.bestPiece(val, pieceSet)
+            square : chess.Square = chess.parse_square(key)
+            if (piece is not None):
+                if (piece !=  self.game.piece_at(square)):
+                    toSquares.append(square)
+                    if(not gameStarted):
+                        self.game.set_piece_at(square, piece)
+            else:
+                if (self.game.piece_at(square) is not None):
+                    fromSquares.append(square)
+                    if(not gameStarted):
+                        self.game.remove_piece_at(square)
            
         profiler.log(51, "Updated game")
 
@@ -192,7 +197,7 @@ class Runner:
             lastmove = None
             if (gameStarted):
                 if (len(fromSquares) == 1 and len(toSquares) == 1):
-                    uciMove = f'{fromSquares[0].name}{toSquares[0].name}'
+                    uciMove = f'{chess.square_name(fromSquares[0])}{chess.square_name(toSquares[0])}'
                     print(f'Adding move - {uciMove}')
                     self.game.push_uci(uciMove)
                     lastmove = self.game.peek()
@@ -255,9 +260,9 @@ class Runner:
                 if (processTurn or not gameStarted):
                     boardCounts = board.detectPieces(img, profiler, False)
                     profiler.log(60, "Processed full board")
-                    #resolved = self.updateGame(boardCounts, gameStarted, profiler)
-                    # if (resolved):
-                    #     processTurn = False
+                    resolved = self.updateGame(boardCounts, gameStarted, pieceSet, profiler)
+                    if (resolved):
+                        processTurn = False
 
                     profiler.log(61, "Updated game")
                 board.drawOrigSquares(img, boardCounts, pieceSet)

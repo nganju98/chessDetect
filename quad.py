@@ -53,17 +53,15 @@ class Quad():
 
 
     def draw(self, img, pieceCounts, pieceSet):
-        piece = Quad.bestPiece(pieceCounts, pieceSet)
+        piece : chess.Piece = Quad.bestPiece(pieceCounts, pieceSet)
         if (piece is None):
             cv2.polylines(img, self.polyCoords(), True, thickness=3, color=(0,0,255))
             cv2.putText(img, self.name, [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 1, color=(0,0,255), thickness=3, lineType=2)
         else:
             cv2.polylines(img, self.polyCoords(), True, thickness=3, color=(255,255,255))
-            #piece : equipment.Piece = self.bestPiece()
-            #ids = ",".join(map(str,self.pieces))
-            cv2.putText(img, f'{self.name}-{piece.abbrev}', [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 1, color=(255,255,255), thickness=3, lineType=2)
+            cv2.putText(img, f'{self.name}-{piece.symbol()}', [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 1, color=(255,255,255), thickness=3, lineType=2)
 
-    def bestPiece(pieceCounts, pieceSet) -> equipment.Piece:
+    def bestPiece(pieceCounts, pieceSet) -> chess.Piece:
         if (len(pieceCounts) == 0):
             return None
         max = 0
@@ -72,7 +70,7 @@ class Quad():
             if (val > max):
                 max = val
                 maxKey = key
-        return pieceSet[maxKey]
+        return pieceSet[maxKey].chessPiece
 
     def scanPieces(self, points, ids):
         pieceCounts=[]
