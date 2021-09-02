@@ -3,6 +3,7 @@ import cv2
 from shapely.geometry.polygon import Polygon
 import cv2.aruco as aruco
 import numpy as np
+import numpy.typing
 import equipment
 
 def getArucoVars():
@@ -46,7 +47,7 @@ def findArucoMarkersInPolygon(img, polygon : Polygon, bufferInPixels, drawPolygo
 
     return bboxs, ids
 
-def getSizeInPixels(desiredSizeInMm, dpi = 300):
+def getSizeInPixels(desiredSizeInMm, dpi):
     mmPerInch = 25.4
     pixelsPerMm = dpi / mmPerInch
     retval = pixelsPerMm * desiredSizeInMm
@@ -55,12 +56,12 @@ def getSizeInPixels(desiredSizeInMm, dpi = 300):
 def rint(input):
     return np.int32( np.round(input))
 
-def generatePiece(piece : equipment.Piece, markerSizeInMm, bufferSizeInMm = 1):
+def generatePiece(piece : equipment.Piece, markerSizeInMm, bufferSizeInMm, dpi):
 
-    markerSizeInPixels = rint(getSizeInPixels(markerSizeInMm))
+    markerSizeInPixels = rint(getSizeInPixels(markerSizeInMm, dpi))
     
-    pieceSizeInPixels = getSizeInPixels(piece.diameterInMm)
-    bufferSize = getSizeInPixels(bufferSizeInMm)
+    pieceSizeInPixels = getSizeInPixels(piece.diameterInMm, dpi)
+    bufferSize = getSizeInPixels(bufferSizeInMm, dpi)
 
     imgSize = rint(2*markerSizeInPixels + 4 * bufferSize + pieceSizeInPixels)
     
@@ -101,10 +102,76 @@ def generatePiece(piece : equipment.Piece, markerSizeInMm, bufferSizeInMm = 1):
 
 if __name__ == "__main__":
     markerSizeInMm = 7
+    dpi = 300
+    bufferSizeInMm = 1
+    pageWidth = 4 * dpi
+    pageHeight = 6 * dpi
+    
+    buffer = 5 # dpi / 4
+    sections = [[0,0], 
+        [pageWidth / 2, 0], 
+        [0, pageHeight / 3], 
+        [pageWidth / 2, pageHeight / 3], 
+        [0, 2 * pageHeight / 3], 
+        [pageWidth / 2, 2 *  pageHeight / 3]]
 
-    for piece in equipment.SET1:
-        img = generatePiece(piece, markerSizeInMm)
-        cv2.imwrite(f'./images/{piece.fullName}.png', img)
+    page1 = [('p', sections[0]), 
+              ('p', sections[1]),
+              ('p', sections[2]),
+              ('p', sections[3]),
+              ('p', sections[4]),
+              ('P', sections[5])
+    ]
+
+
+    page2 = [('p', sections[0]), 
+              ('p', sections[1]),
+              ('q', sections[2]),
+              ('k', sections[3]),
+              ('r', sections[4]),
+              ('r', sections[5])
+    ]
+
+
+    page3 = [('b', sections[0]), 
+              ('b', sections[1]),
+              ('n', sections[2]),
+              ('n', sections[3]),
+           
+    ]
+    pages = [page1, page2, page3]
+    
+    imageDict = {}
+    for piece in equipment.SET2:
+        img = generatePiece(piece, markerSizeInMm, bufferSizeInMm, dpi)
+        imageDict[piece.abbrev] = img
+        
+        cv2.imwrite(f'./images/set2_{piece.fullName}.png', img)
    
-        cv2.imshow("ArUCo Tag", img)
-        cv2.waitKey(0)
+        #cv2.imshow("ArUCo Tag", img)
+        #cv2.waitKey(0)
+
+    for ctr, page in enumerate(pages):
+        pageImage = np.zeros((pageHeight, pageWidth), dtype="uint8")
+        pageImage.fill(255)
+        for section in page:
+            pieceName = section[0]
+            pieceCoord = [ int(buffer + section[1][0]), int(buffer + section[1][1]) ]
+            image : numpy.typing.NDArray = imageDict[pieceName]
+            pageImage[pieceCoord[1]:pieceCoord[1] + image.shape[0], pieceCoord[0]:pieceCoord[0] + image.shape[1]] = image
+        
+        
+        cv2.imwrite(f'./images/set2_black_page{ctr + 1}.png', pageImage)
+
+
+    for ctr, page in enumerate(pages):
+        pageImage = np.zeros((pageHeight, pageWidth), dtype="uint8")
+        pageImage.fill(255)
+        for section in page:
+            pieceName = section[0].upper()
+            pieceCoord = [ int(buffer + section[1][0]), int(buffer + section[1][1]) ]
+            image : numpy.typing.NDArray = imageDict[pieceName]
+            pageImage[pieceCoord[1]:pieceCoord[1] + image.shape[0], pieceCoord[0]:pieceCoord[0] + image.shape[1]] = image
+        
+        
+        cv2.imwrite(f'./images/set2_white_page{ctr + 1}.png', pageImage)

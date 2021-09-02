@@ -72,27 +72,6 @@ class Runner:
         else:
             return False
 
-        
-                
-
-    # def processBoard(img, lastSeenCorners, calibrateOnly):
-    #     #bboxs, ids = findArucoMarkers(img)
-    #     profiler.log(2, "Found markers")
-        
-    #     # if (board is None or not board.calibrateSuccess or
-    #     #     board.cornersChanged(bboxs, ids) or
-    #     # (BoardFinder.idsPresent(ids) and board.ageInMs() > 4000)):
-    #     board = Board(equipment.getCurrentSet(), equipment.getCurrentBoardWidthInMm())
-    #     #print("procesing board")
-    #     board.calibrate(img, bboxs, ids, False)
-    #     profiler.log(3, "Calibrate")
-                
-    #     if (board.calibrateSuccess):
-    #         #print(board.ageInMs())
-    #         board.markPieces(bboxs, ids, img)
-    #         board.drawOrigSquares(img)
-    #     profiler.log(4, "Find pieces")
-    #     return board
 
                
 
@@ -144,7 +123,7 @@ class Runner:
 
         return result    
 
-    def showImage(self, img, fps):
+    def showImage(self, img, fps : FPS):
         show = None
         if (self.zoom):
             img.shape[0]

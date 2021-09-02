@@ -45,7 +45,7 @@ class Piece:
         self.color = color
         self.diameterInMm = diameterInMm
         if (type == PieceType.KNIGHT):
-            self.abbrev = 'K'
+            self.abbrev = 'N'
         else:
             self.abbrev = self.type.name[0]
         if (color == PieceColor.BLACK):
@@ -74,8 +74,29 @@ SET1 = [
 
 SET1_DICT = {x.markerId: x for x in SET1}
 
+
+
+SET2 = [
+    Piece(PieceType.PAWN, PieceColor.WHITE, 20),
+    Piece(PieceType.BISHOP, PieceColor.WHITE, 23),
+    Piece(PieceType.KNIGHT, PieceColor.WHITE, 23),
+    Piece(PieceType.ROOK, PieceColor.WHITE, 23),
+    Piece(PieceType.QUEEN, PieceColor.WHITE, 30),
+    Piece(PieceType.KING, PieceColor.WHITE, 31),
+
+    Piece(PieceType.PAWN, PieceColor.BLACK, 20),
+    Piece(PieceType.BISHOP, PieceColor.BLACK, 23),
+    Piece(PieceType.KNIGHT, PieceColor.BLACK, 23),
+    Piece(PieceType.ROOK, PieceColor.BLACK, 23),
+    Piece(PieceType.QUEEN, PieceColor.BLACK, 30),
+    Piece(PieceType.KING, PieceColor.BLACK, 31),
+]
+
+SET2_DICT = {x.markerId: x for x in SET1}
+
+
 def getCurrentSet():
-    return SET1_DICT
+    return SET2_DICT
 
 def getCurrentBoardWidthInMm():
     return 450
