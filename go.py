@@ -26,6 +26,7 @@ if os.name == 'nt':
 
 
 from camera import *
+import pygame
 from quad import Quad
 from PIL import Image
 from cairosvg import svg2png
@@ -42,7 +43,6 @@ import datetime
 import time
 from board import Board
 import equipment
-import beepy
 from boardFinder import BoardFinder
 import threading
 from aruco import findArucoMarkers
@@ -228,6 +228,8 @@ class Runner:
 
     def run(self, pieceSet, boardWidthInMm):
         cap = Camera()
+        pygame.init()
+        buttonSound = pygame.mixer.Sound('blurp.wav')
         #cap.set(cv2.CAP_PROP_FPS, 30)
         fps = FPS(5).start()
         lastCalibratedBoard = None
@@ -245,7 +247,7 @@ class Runner:
                 buttonDepressed = False
             else:
                 if (not buttonDepressed):
-                    threading.Thread(target=beepy.beep, args=("coin",)).start()
+                    threading.Thread(target=buttonSound.play, args=()).start()
                 buttonDepressed = True
                 processTurn = True
                 gameStarted = True
@@ -264,7 +266,7 @@ class Runner:
                     resolved = self.updateGame(boardCounts, gameStarted, pieceSet, profiler)
                     if (processTurn and resolved):
                         processTurn = False
-                        threading.Thread(target=beepy.beep, args=("ready",)).start()
+                        #threading.Thread(target=beepy.beep, args=("ready",)).start()
 
                     profiler.log(61, "Updated game")
                 board.drawOrigSquares(img, boardCounts, pieceSet)

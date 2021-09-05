@@ -8,9 +8,9 @@ opencv-contrib-python = "*"
 imutils = "*"
 Shapely = "*"
 matplotlib = "*"
-beepy = "*"
 chess = "*"
 CairoSVG = "*"
+pygame = "*"
 
 [dev-packages]
 
