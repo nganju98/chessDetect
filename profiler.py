@@ -21,11 +21,12 @@ class Profiler:
     def output(self):
         for i in range(0, len(self.entries)):
             elapsed = 0
+            total = 0
             entry : ProfilerEntry = self.entries[i]
             if (i > 0):
                 elapsed = (entry.timer - self.entries[i-1].timer) * 1000
-
-            print(f'{entry.id}: {elapsed:.2f}ms : {entry.message}')  
+                total =  (entry.timer - self.entries[0].timer) * 1000
+            print(f'{entry.id}: e:{elapsed:.2f}ms t:{total:.2f}: {entry.message}')  
             
 
 
