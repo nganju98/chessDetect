@@ -22,10 +22,10 @@ if os.name == 'nt':
     set_dll_search_path()
     path = ctypes.util.find_library('libcairo-2')
     print("Found libcairo at: " + path)
-    print (os.environ['path'])
+    print ("Total system path = " + os.environ['path'])
 
 
-
+from camera import *
 from quad import Quad
 from PIL import Image
 from cairosvg import svg2png
@@ -227,14 +227,7 @@ class Runner:
             
 
     def run(self, pieceSet, boardWidthInMm):
-        cap = cv2.VideoCapture(0)
-        cap.set(3, 3264)
-        cap.set(4, 2448)
-        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
-        cfps = cap.get(cv2.CAP_PROP_FPS)
-        print (f'capture fps = {cfps}')
-        cap.read() # warm up camera
-        time.sleep(2)
+        cap = Camera()
         #cap.set(cv2.CAP_PROP_FPS, 30)
         fps = FPS(5).start()
         lastCalibratedBoard = None
@@ -243,7 +236,8 @@ class Runner:
         processTurn = False
         while True:
             profiler = Profiler()
-            ret, img = cap.read()
+            frame = cap.read()
+            img = frame.img
             profiler.log(1, "Read the frame")
 
             buttonPushed = self.processButtons(img, profiler)
