@@ -52,28 +52,36 @@ class Quad():
         return Quad(tl, tr, br, bl, name, path=mpltPath.Path([tl, tr, br, bl]), chessSquare=chess.parse_square(name))
 
 
-    def draw(self, img, pieceCounts, pieceSet):
+    def draw(self, img, pieceCounts, pieceSet, drawCounts):
         piece : chess.Piece = Quad.bestPiece(pieceCounts, pieceSet)
+        pieceCountStr = ''
+        if drawCounts:
+            for key, val in pieceCounts.items():
+                pieceCountStr += str(key) + ":" + str(val) + ","
+
         if (piece is None):
             cv2.polylines(img, self.polyCoords(), True, thickness=3, color=(0,0,255))
-            cv2.putText(img, self.name, [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 1, color=(0,0,255), thickness=3, lineType=2)
+            cv2.putText(img, self.name, [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, .5, color=(0,0,255), thickness=1, lineType=1)
         else:
             cv2.polylines(img, self.polyCoords(), True, thickness=3, color=(255,255,255))
-            cv2.putText(img, f'{self.name}-{piece.symbol()}', [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, 1, color=(255,255,255), thickness=3, lineType=2)
+            cv2.putText(img, f'{self.name}-{piece.symbol()} {pieceCountStr}', [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, .5, color=(255,255,255), thickness=1, lineType=1)
 
     def bestPiece(pieceCounts, pieceSet) -> chess.Piece:
         if (len(pieceCounts) == 0):
             return None
-        max = 0
+        max = -1
         maxKey = -1
         for key, val in pieceCounts.items():
             if (val > max):
                 max = val
                 maxKey = key
-        return pieceSet[maxKey].chessPiece
+        if max == 0:
+            return None
+        else:
+            return pieceSet[maxKey].chessPiece
 
     def scanPieces(self, points, ids):
-        pieceCounts=[]
+        pieceCounts={}
         if len(points) > 0:
             results = self.path.contains_points(points)
             if (True in results):

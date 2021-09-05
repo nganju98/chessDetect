@@ -1,5 +1,6 @@
 import os
 import ctypes.util
+from re import T
 
 def set_dll_search_path():
    # Python 3.8 no longer searches for DLLs in PATH, so we have to add
@@ -33,7 +34,6 @@ from cairosvg import svg2png
 import numpy as np
 from game import Game
 import cv2
-
 from fps import FPS
 import imutils
 from io import BytesIO
@@ -41,7 +41,7 @@ from io import BytesIO
 from shapely.geometry import Polygon
 import datetime
 import time
-from board import Board
+from board import *
 import equipment
 from boardFinder import BoardFinder
 import threading
@@ -140,12 +140,12 @@ class Runner:
         if (len(ids) > 1):
             if (equipment.Marker.WHITE_BUTTON.value not in ids):
                 result = equipment.Marker.WHITE_BUTTON
-                print('White button pressed')
+                print('White button pressed ' + str(ids))
                 
                     
             elif (equipment.Marker.BLACK_BUTTON.value not in ids):
                 result = equipment.Marker.BLACK_BUTTON
-                print('Black button pressed')
+                print('Black button pressed ' + str(ids))
         else:
             print("Couldn't find buttons")
 
@@ -175,16 +175,16 @@ class Runner:
             lineType=lineType)
         cv2.imshow('img',show)
 
-    def updateGame(self, boardCounts:dict, gameStarted:bool, pieceSet : dict, profiler: Profiler):
+    def updateGame(self, boardCounts:BoardCount, gameStarted:bool, pieceSet : dict, profiler: Profiler):
         
         #empty = chess.STATUS_EMPTY in self.game.status()
         fromSquares = []
         toSquares = []
 
-        if len(boardCounts) != 64:
+        if len(boardCounts.count) != 64:
             raise RuntimeError(f'Weird boardcounts, length={len(boardCounts)}')
 
-        for key, val in boardCounts.items():
+        for key, val in boardCounts.count.items():
             piece = Quad.bestPiece(val, pieceSet)
             square : chess.Square = chess.parse_square(key)
             if (piece is not None):
@@ -213,7 +213,7 @@ class Runner:
             i = chess.svg.board(self.game, squares=[chess.E2], arrows=[(chess.E5, chess.E5)], lastmove=lastmove)
             profiler.log(52, "Generated SVG")
             #print(i)
-            png = svg2png(bytestring=i)
+            png = svg2png(bytestring=i, output_width=300)
             profiler.log(52, "Made png from svg")
             
             pil_img = Image.open(BytesIO(png)).convert('RGBA')
@@ -236,13 +236,14 @@ class Runner:
         gameStarted = False
         buttonDepressed = False
         processTurn = False
+        recentCounts = BoardCountCache()
+        
         while True:
             profiler = Profiler()
             frame = cap.read()
-            img = frame.img
             profiler.log(1, "Read the frame")
 
-            buttonPushed = self.processButtons(img, profiler)
+            buttonPushed = self.processButtons(frame.img, profiler)
             if (buttonPushed is None):
                 buttonDepressed = False
             else:
@@ -254,28 +255,29 @@ class Runner:
 
             profiler.log(2, "processed buttons")
             board = Board(pieceSet, boardWidthInMm)
-            board.calibrate(img, lastCalibratedBoard, profiler,False)
+            board.calibrate(frame.img, lastCalibratedBoard, profiler,False)
             profiler.log(3, "Calibrated board")
             if(board.calibrateSuccess):
                 lastCalibratedBoard = board
                 profiler.log(4, "Drew squares")
                 boardCounts = {}
                 if (processTurn or not gameStarted):
-                    boardCounts = board.detectPieces(img, profiler, True)
+                    boardCounts = board.detectPieces(frame, profiler, True)
+                    recentCounts.append(boardCounts)
                     profiler.log(60, "Processed full board")
-                    resolved = self.updateGame(boardCounts, gameStarted, pieceSet, profiler)
+                    resolved = self.updateGame(recentCounts, gameStarted, pieceSet, profiler)
                     if (processTurn and resolved):
                         processTurn = False
                         #threading.Thread(target=beepy.beep, args=("ready",)).start()
 
                     profiler.log(61, "Updated game")
-                board.drawOrigSquares(img, boardCounts, pieceSet)
+                board.drawOrigSquares(frame.img, recentCounts, pieceSet, True)
             
-            self.showImage(img, fps)
+            self.showImage(frame.img, fps)
             profiler.log(4, "Show image")
             
             k = cv2.waitKey(1) & 0xff
-            quit = self.doKeys(k, cap, img, profiler)
+            quit = self.doKeys(k, cap, frame.img, profiler)
             if (quit):
                 break
             profiler.log(6, "Did keys")

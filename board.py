@@ -1,3 +1,4 @@
+from functools import cache
 import cv2
 import imutils
 from shapely import coords
@@ -11,6 +12,47 @@ from equipment import Marker, Piece
 from boardFinder import BoardFinder
 from quad import Quad
 from copy import deepcopy
+from camera import Frame
+from collections import deque
+from typing import Deque
+
+class BoardCount:
+    def __init__(self, count, frameNumber, frameTime):
+        self.count = count
+        self.frameNumber = frameNumber
+        self.frameTime = frameTime
+        
+
+class BoardCountCache:
+    def __init__(self, cacheSize = 10):
+        self.cache : Deque = deque()
+        self.count = {}
+        self.cacheSize = cacheSize
+
+    def append(self, boardCount: BoardCount):
+        self.cache.append(boardCount)
+        self.update(boardCount, True)
+        if (len(self.cache) > self.cacheSize):
+            removed = self.cache.popleft()
+            self.update(removed, False)
+
+    
+    def update(self, boardCount : BoardCount, accumulate : bool):
+        for key, val in boardCount.count.items():
+            if (key not in self.count):
+                self.count[key] = {}
+            squareCounts = self.count[key]
+            for markerId, count in val.items():
+                if (markerId not in squareCounts):
+                    squareCounts[markerId] = 0
+                addend = count if accumulate else -count
+                squareCounts[markerId] += addend
+
+    def refresh(self):
+        self.count = {}
+        for boardCount in self.cache:
+            self.update(boardCount, True)
+
 
 
 class Board:
@@ -34,6 +76,8 @@ class Board:
             print("Need to recalibrate corners")
             bboxs, ids = aruco.findArucoMarkers(img)
             self.corners = BoardFinder.findCorners(bboxs, ids, img.shape)
+            if (self.corners is not None):
+                print("Found corners")
 
         
         if (self.corners is not None):
@@ -64,12 +108,12 @@ class Board:
         age : datetime.timedelta = datetime.datetime.now() - self.processed
         return age.total_seconds() * 1000
 
-    def detectPieces(self, img, profiler, draw=True):
+    def detectPieces(self, frame : Frame, profiler, draw=True):
         
         if (self.corners is None or self.rect is None or self.pixelsPerMm is None or not self.calibrateSuccess):
             raise RuntimeError("Attempt to detect pieces but self.corners is None")
 
-        bboxs, ids = aruco.findArucoMarkersInPolygon(img, Polygon(self.rect), self.pixelsPerMm * 5)
+        bboxs, ids = aruco.findArucoMarkersInPolygon(frame.img, Polygon(self.rect), self.pixelsPerMm * 5)
         
         profiler.log(82, "Detected arucos in board rectangle")
 
@@ -88,7 +132,7 @@ class Board:
                 pixelLength = self.pixelsPerMm * (piece.diameterInMm / 2)
                 pieceCenter = BoardFinder.getPieceCenter(corners, pixelLength)
                 if draw:
-                    cv2.circle(img, pieceCenter, 5, (0,255,0), 2)
+                    cv2.circle(frame.img, pieceCenter, 5, (0,255,0), 2)
                     
                 pointList.append(pieceCenter)
                 validIds.append(markerId)
@@ -108,15 +152,15 @@ class Board:
             
         
         profiler.log(82, "Processed squares to find contained arucos")
-        return boardCounts
+        return BoardCount(boardCounts, frame.frameNumber, frame.frameTime)
 
 
-    def drawOrigSquares(self, img, boardCounts, pieceSet):
+    def drawOrigSquares(self, img, boardCounts : BoardCount, pieceSet, drawPieceCount = False):
         for row in self.origSquares:
             square : Quad
             for square in row:
-                pieceCounts = boardCounts[square.name] if square.name in boardCounts else []
-                square.draw(img, pieceCounts, pieceSet)
+                pieceCounts = boardCounts.count[square.name] if square.name in boardCounts.count else []
+                square.draw(img, pieceCounts, pieceSet, drawPieceCount)
 
     # def cornersChanged(self, bboxs, ids):
     #     if (not BoardFinder.idsPresent(ids)):
