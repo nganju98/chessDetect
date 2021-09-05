@@ -32,7 +32,7 @@ from quad import Quad
 from PIL import Image
 from cairosvg import svg2png
 import numpy as np
-from game import Game
+#from game import Game
 import cv2
 from fps import FPS
 import imutils
@@ -48,6 +48,7 @@ import threading
 from aruco import findArucoMarkers
 from profiler import Profiler
 import chess
+import chess.svg
 
 class Runner:
         
@@ -210,7 +211,8 @@ class Runner:
                     lastmove = self.game.peek()
                 else:
                     print(f'Error: {len(fromSquares)} have disappeared pieces and {len(toSquares)} have appared pieces')
-            i = chess.svg.board(self.game, squares=[chess.E2], arrows=[(chess.E5, chess.E5)], lastmove=lastmove)
+            i = chess.svg.board(self.game, lastmove=lastmove)
+            #i = chess.svg.board(self.game, squares=[chess.E2], arrows=[(chess.E5, chess.E5)], lastmove=lastmove)
             profiler.log(52, "Generated SVG")
             #print(i)
             png = svg2png(bytestring=i, output_width=300)
