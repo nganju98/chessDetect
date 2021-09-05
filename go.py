@@ -229,7 +229,7 @@ class Runner:
     def run(self, pieceSet, boardWidthInMm):
         cap = Camera()
         pygame.init()
-        buttonSound = pygame.mixer.Sound('blurp.wav')
+        buttonSound = pygame.mixer.Sound('./sounds/blurp.wav')
         #cap.set(cv2.CAP_PROP_FPS, 30)
         fps = FPS(5).start()
         lastCalibratedBoard = None
