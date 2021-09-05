@@ -1,3 +1,31 @@
+import os
+import ctypes.util
+
+def set_dll_search_path():
+   # Python 3.8 no longer searches for DLLs in PATH, so we have to add
+   # everything in PATH manually. Note that unlike PATH add_dll_directory
+   # has no defined order, so if there are two cairo DLLs in PATH we
+   # might get a random one.
+   if os.name != "nt" or not hasattr(os, "add_dll_directory"):
+       return
+   for p in os.environ.get("PATH", "").split(os.pathsep):
+       try:
+           os.add_dll_directory(p)
+       except OSError:
+           pass
+
+print("Running on os: " + os.name)
+if os.name == 'nt':
+    dllPath = f'{os.path.dirname(os.path.realpath(__file__))}\\cairo_dlls'
+    print("Dll path: " + dllPath)
+    os.environ['path'] += ";" + dllPath
+    set_dll_search_path()
+    path = ctypes.util.find_library('libcairo-2')
+    print("Found libcairo at: " + path)
+    print (os.environ['path'])
+
+
+
 from quad import Quad
 from PIL import Image
 from cairosvg import svg2png
