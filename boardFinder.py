@@ -161,7 +161,7 @@ class BoardFinder:
 
             polygon = Polygon(corner)
             bufferSize = 2 * pixelsPerMm # 2mm buffer
-            bbox, id = aruco.findArucoMarkersInPolygon(img, polygon, bufferSize, False)
+            bbox, id = aruco.findArucoMarkersInPolygon(img, polygon, bufferSize, False, False)
             #cv2.rectangle(img, [rect[0], rect[1]], [rect[2], rect[3]], color=(0,0,255), thickness=1)
             if (id is not None):
                 id = id.flatten()
