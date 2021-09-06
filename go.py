@@ -1,42 +1,12 @@
-import os
-import ctypes.util
-from re import T
-
-def set_dll_search_path():
-   # Python 3.8 no longer searches for DLLs in PATH, so we have to add
-   # everything in PATH manually. Note that unlike PATH add_dll_directory
-   # has no defined order, so if there are two cairo DLLs in PATH we
-   # might get a random one.
-   if os.name != "nt" or not hasattr(os, "add_dll_directory"):
-       return
-   for p in os.environ.get("PATH", "").split(os.pathsep):
-       try:
-           os.add_dll_directory(p)
-       except OSError:
-           pass
-
-print("Running on os: " + os.name)
-if os.name == 'nt':
-    dllPath = f'{os.path.dirname(os.path.realpath(__file__))}\\cairo_dlls'
-    print("Dll path: " + dllPath)
-    os.environ['path'] += ";" + dllPath
-    set_dll_search_path()
-    path = ctypes.util.find_library('libcairo-2')
-    print("Found libcairo at: " + path)
-    print ("Total system path = " + os.environ['path'])
-
 
 from camera import *
 import pygame
 from quad import Quad
-from PIL import Image
-from cairosvg import svg2png
 import numpy as np
 #from game import Game
 import cv2
 from fps import FPS
 import imutils
-from io import BytesIO
 
 from shapely.geometry import Polygon
 import datetime
@@ -49,6 +19,7 @@ from aruco import findArucoMarkers
 from profiler import Profiler
 import chess
 import chess.svg
+from gui import ChessGui
 
 class Runner:
         
@@ -59,6 +30,7 @@ class Runner:
         self.zoomFactor = 8
         self.buttonLocations = None
         self.game = chess.Board.empty()
+        
         
 
     def doKeys(self, k, cap, img, profiler:Profiler):
@@ -127,7 +99,6 @@ class Runner:
                     int(min(img.shape[1] - 1, polygon.bounds[2] + bufferSize)),
                     int(min(img.shape[0] - 1, polygon.bounds[3] + bufferSize))]
                 self.buttonLocations.append(rect)
-
         else:
             ids = []
             for location in self.buttonLocations:
@@ -176,7 +147,7 @@ class Runner:
             lineType=lineType)
         cv2.imshow('img',show)
 
-    def updateGame(self, boardCounts:BoardCount, gameStarted:bool, pieceSet : dict, profiler: Profiler):
+    def updateGame(self, boardCounts:BoardCount, gameStarted:bool, pieceSet : dict, gui:ChessGui, profiler: Profiler):
         
         #empty = chess.STATUS_EMPTY in self.game.status()
         fromSquares = []
@@ -211,27 +182,23 @@ class Runner:
                     lastmove = self.game.peek()
                 else:
                     print(f'Error: {len(fromSquares)} have disappeared pieces and {len(toSquares)} have appared pieces')
-            i = chess.svg.board(self.game, lastmove=lastmove)
-            #i = chess.svg.board(self.game, squares=[chess.E2], arrows=[(chess.E5, chess.E5)], lastmove=lastmove)
+            
+            svg = chess.svg.board(self.game, lastmove=lastmove)
+            gui.updateChessBoard(svg, profiler)
             profiler.log(52, "Generated SVG")
-            #print(i)
-            png = svg2png(bytestring=i, output_width=300)
-            profiler.log(52, "Made png from svg")
-            
-            pil_img = Image.open(BytesIO(png)).convert('RGBA')
-            
-            cv_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGBA2BGRA)
-            profiler.log(53, "Made image")
-            cv2.imshow("chessboard", cv_img)
+  
             
         return True
        
             
 
     def run(self, pieceSet, boardWidthInMm):
+        gui : ChessGui = ChessGui()
+        threading.Thread(target=gui.start, args=()).start()
+
         cap = Camera()
         pygame.init()
-        buttonSound = pygame.mixer.Sound('./sounds/blurp.wav')
+        buttonSound = pygame.mixer.Sound('./assets/blurp.wav')
         #cap.set(cv2.CAP_PROP_FPS, 30)
         fps = FPS(5).start()
         lastCalibratedBoard = None
@@ -267,7 +234,7 @@ class Runner:
                     boardCounts = board.detectPieces(frame, profiler, True)
                     recentCounts.append(boardCounts)
                     profiler.log(60, "Processed full board")
-                    resolved = self.updateGame(recentCounts, gameStarted, pieceSet, profiler)
+                    resolved = self.updateGame(recentCounts, gameStarted, pieceSet, gui, profiler)
                     if (processTurn and resolved):
                         processTurn = False
                         #threading.Thread(target=beepy.beep, args=("ready",)).start()
