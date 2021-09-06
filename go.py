@@ -173,18 +173,17 @@ class Runner:
         profiler.log(51, "Updated game")
 
         if (len(fromSquares) > 0 or len(toSquares) > 0):
-            lastmove = None
+           
             if (gameStarted):
                 if (len(fromSquares) == 1 and len(toSquares) == 1):
                     uciMove = f'{chess.square_name(fromSquares[0])}{chess.square_name(toSquares[0])}'
                     print(f'Adding move - {uciMove}')
                     self.game.push_uci(uciMove)
-                    lastmove = self.game.peek()
                 else:
                     print(f'Error: {len(fromSquares)} have disappeared pieces and {len(toSquares)} have appared pieces')
             
-            svg = chess.svg.board(self.game, lastmove=lastmove)
-            gui.updateChessBoard(svg, profiler)
+            #svg = chess.svg.board(self.game, lastmove=lastmove)
+            gui.updateChessBoard(self.game, profiler)
             profiler.log(52, "Generated SVG")
   
             
