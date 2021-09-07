@@ -17,8 +17,8 @@ class Camera:
         self.frameCtr = 0
         self.focus = 165
         self.cap = cv2.VideoCapture(0)
-        self.cap.set(3, 3264)
-        self.cap.set(4, 2448)
+        self.cap.set(3, 2048) # 3264x2448 was better but hurt performance, this works fine
+        self.cap.set(4, 1536) # 2448
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
         cfps = self.cap.get(cv2.CAP_PROP_FPS)
         print (f'camera capture fps = {cfps}')
