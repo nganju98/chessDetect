@@ -33,7 +33,7 @@ class Runner:
         
         
 
-    def doKeys(self, k, cap, img, profiler:Profiler):
+    def doKeys(self, k, cap : Camera, img, profiler:Profiler):
 
         if k == ord('1'):
             start = datetime.datetime.now()
@@ -66,7 +66,13 @@ class Runner:
         if k == ord('p'):
             profiler.output()
         if k == ord('f'):
-            print(cap.get(cv2.CAP_PROP_FOCUS))
+            auto, focus = cap.getFocusParams()
+            print(f'camera auto={auto}, focus={focus}' )
+        if k == ord('j'):
+            cap.focusDown()
+        if k == ord('k'):
+            cap.focusUp()
+
 
         if k == 27:
             return True
