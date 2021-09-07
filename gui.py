@@ -71,9 +71,9 @@ class ChessGui:
         
         self.img = ImageTk.PhotoImage(pil_img)  
         self.canvas.itemconfig(self.imageContainer, image=self.img)
-        if self.game.is_valid():
+        if board.is_valid():
             engine = Engine()
-            engine.setFenPosition(self.game.fen())
+            engine.setFenPosition(board.fen())
             
         #profiler.log(53, "Made image")
   

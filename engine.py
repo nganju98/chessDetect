@@ -1,9 +1,12 @@
 from stockfish import Stockfish
-
+import os
 class Engine:
 
     def __init__(self):
-        self.stockfish = Stockfish("./bin/stockfish_14_x64_avx2.exe", 20)
+        if os.name == 'nt':
+            self.stockfish = Stockfish("./bin/stockfish_14_x64_avx2.exe", 12)
+        else:
+            self.stockfish=Stockfish('./bin/stockfish_14_x64_avx2', 12)
 
     def setFenPosition(self, fen:str):
         self.stockfish.set_fen_position(fen)
