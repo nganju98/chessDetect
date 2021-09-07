@@ -8,12 +8,12 @@ class Engine:
         else:
             self.stockfish=Stockfish('./bin/stockfish_14_x64_avx2', 12)
 
-    def setFenPosition(self, fen:str):
+    def getScoreForPosition(self, fen:str):
         self.stockfish.set_fen_position(fen)
         print("Starting eval")
         eval = self.stockfish.get_evaluation()
         print(f'STOCKFISH EVAL: {eval}')
-
+        return eval["value"]
 
 
 

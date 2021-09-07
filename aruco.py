@@ -70,8 +70,12 @@ def generatePiece(piece : equipment.Piece, markerSizeInMm, bufferSizeInMm, dpi):
     img.fill(255)
     arucoDict, _ = getArucoVars()
     cv2.circle(img, [rint(imgSize/2), rint(imgSize/2)], rint(pieceSizeInPixels/2), color=(0,0,0))
-    cv2.putText(img, f'{piece.fullName}:{piece.diameterInMm}mm', [rint(imgSize/2 - pieceSizeInPixels/4), rint(imgSize/2)], 
-        cv2.FONT_HERSHEY_SIMPLEX, .5, color=(0,0,0), thickness=1, lineType=cv2.LINE_AA)
+    cv2.putText(img, f'{piece.diameterInMm}mm', [rint(imgSize/2 - pieceSizeInPixels/3), rint(imgSize/2 - pieceSizeInPixels / 5)], 
+        cv2.FONT_HERSHEY_SIMPLEX, .75, color=(0,0,0), thickness=1, lineType=cv2.LINE_AA)
+    cv2.putText(img, f'{piece.fullName}', [rint(imgSize/2 - pieceSizeInPixels/3), rint(imgSize/2)], 
+        cv2.FONT_HERSHEY_SIMPLEX, .75, color=(0,0,0), thickness=1, lineType=cv2.LINE_AA)
+    cv2.putText(img, f'Id:{piece.markerId}', [rint(imgSize/2 - pieceSizeInPixels/3), rint(imgSize/2 + pieceSizeInPixels / 5)], 
+        cv2.FONT_HERSHEY_SIMPLEX, .75, color=(0,0,0), thickness=1, lineType=cv2.LINE_AA)
 
     arucoImg = np.zeros((markerSizeInPixels, markerSizeInPixels), dtype="uint8") 
     cv2.aruco.drawMarker(arucoDict, piece.markerId, markerSizeInPixels, arucoImg, 1)
@@ -161,7 +165,7 @@ if __name__ == "__main__":
             pageImage[pieceCoord[1]:pieceCoord[1] + image.shape[0], pieceCoord[0]:pieceCoord[0] + image.shape[1]] = image
         
         
-        cv2.imwrite(f'./images/set2_black_page{ctr + 1}.png', pageImage)
+        cv2.imwrite(f'./temp/set2_black_page{ctr + 1}.png', pageImage)
 
 
     for ctr, page in enumerate(pages):
@@ -174,4 +178,4 @@ if __name__ == "__main__":
             pageImage[pieceCoord[1]:pieceCoord[1] + image.shape[0], pieceCoord[0]:pieceCoord[0] + image.shape[1]] = image
         
         
-        cv2.imwrite(f'./images/set2_white_page{ctr + 1}.png', pageImage)
+        cv2.imwrite(f'./temp/set2_white_page{ctr + 1}.png', pageImage)

@@ -53,7 +53,8 @@ class Quad():
 
 
     def draw(self, img, pieceCounts, pieceSet, drawCounts):
-        piece : chess.Piece = Quad.bestPiece(pieceCounts, pieceSet)
+        piece, count = Quad.bestPiece(pieceCounts, pieceSet)
+        
         pieceCountStr = ''
         if drawCounts:
             for key, val in pieceCounts.items():
@@ -63,12 +64,15 @@ class Quad():
             cv2.polylines(img, self.polyCoords(), True, thickness=3, color=(0,0,255))
             cv2.putText(img, self.name, [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, .5, color=(0,0,255), thickness=1, lineType=1)
         else:
-            cv2.polylines(img, self.polyCoords(), True, thickness=3, color=(255,255,255))
-            cv2.putText(img, f'{self.name}-{piece.symbol()} {pieceCountStr}', [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, .5, color=(255,255,255), thickness=1, lineType=1)
+            color = (255,255,255)
+            if (count < 10):
+                color = (0,255,255)
+            cv2.polylines(img, self.polyCoords(), True, thickness=5, color=color)
+            cv2.putText(img, f'{self.name}-{piece.symbol()} {pieceCountStr}', [self.bl[0] + 10, self.bl[1] - 10], cv2.FONT_HERSHEY_SIMPLEX, .5, color=color, thickness=1, lineType=1)
 
     def bestPiece(pieceCounts, pieceSet) -> chess.Piece:
         if (len(pieceCounts) == 0):
-            return None
+            return None, 0
         max = -1
         maxKey = -1
         for key, val in pieceCounts.items():
@@ -76,9 +80,9 @@ class Quad():
                 max = val
                 maxKey = key
         if max == 0:
-            return None
+            return None, 0
         else:
-            return pieceSet[maxKey].chessPiece
+            return pieceSet[maxKey].chessPiece, max
 
     def scanPieces(self, points, ids):
         pieceCounts={}

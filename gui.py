@@ -57,7 +57,8 @@ class ChessGui:
         
     #     self.root.mainloop()
 
-    def updateChessBoard(self, board : chess.Board, profiler : Profiler):
+    def updateChessBoard(self, board : chess.Board):
+        self.text.set("Scoring...")
         lastmove = None
         if len(board.move_stack) > 0:
             lastmove = board.peek()
@@ -73,8 +74,10 @@ class ChessGui:
         self.canvas.itemconfig(self.imageContainer, image=self.img)
         if board.is_valid():
             engine = Engine()
-            engine.setFenPosition(board.fen())
-            
+            score = engine.getScoreForPosition(board.fen())
+            self.text.set(str(score))
+        else:
+            self.text.set("Invalid board")
         #profiler.log(53, "Made image")
   
 

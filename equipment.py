@@ -9,10 +9,10 @@ class Marker(Enum):
     WHITE_BUTTON = 4
     BLACK_BUTTON = 5
     WHITE_PAWN = 10
-    WHITE_BISHOP = 11
+    WHITE_BISHOP = 19 # 11 has bad detection
     WHITE_KNIGHT = 12
     WHITE_ROOK = 13
-    WHITE_QUEEN = 14
+    WHITE_QUEEN = 17 # marker 14 is terrible, doesnt get detected by camera
     WHITE_KING = 15
     BLACK_PAWN = 20
     BLACK_BISHOP = 21

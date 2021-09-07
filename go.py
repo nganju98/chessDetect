@@ -157,7 +157,7 @@ class Runner:
             raise RuntimeError(f'Weird boardcounts, length={len(boardCounts)}')
 
         for key, val in boardCounts.count.items():
-            piece = Quad.bestPiece(val, pieceSet)
+            piece, _ = Quad.bestPiece(val, pieceSet)
             square : chess.Square = chess.parse_square(key)
             if (piece is not None):
                 if (piece !=  self.game.piece_at(square)):
@@ -183,7 +183,9 @@ class Runner:
                     print(f'Error: {len(fromSquares)} have disappeared pieces and {len(toSquares)} have appared pieces')
             
             #svg = chess.svg.board(self.game, lastmove=lastmove)
-            gui.updateChessBoard(self.game, profiler)
+            
+            threading.Thread(target=gui.updateChessBoard, args=(self.game.copy(),)).start()
+            #gui.updateChessBoard(self.game.copy())
             profiler.log(52, "Generated SVG")
   
             
