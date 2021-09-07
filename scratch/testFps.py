@@ -1,6 +1,11 @@
 import cv2
 #from ..fps import *
 
+#v4l2-ctl -d 0 -c focus_absolute=0
+#v4l2-ctl -d 0 -c focus_absolute=500
+#v4l2-ctl -d 0 -C focus_absolute
+#v4l2-ctl -d 0 -c focus_auto=0
+#v4l2-ctl -d 0 -C focus_auto
 
 cap = cv2.VideoCapture(0)
 print(cap.getBackendName())
