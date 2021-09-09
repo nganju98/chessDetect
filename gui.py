@@ -48,27 +48,41 @@ class ChessClock():
         self.timePerSide = timePerSide
         self.increment = increment
     
-    def blackButtonPressed(self):
+    def blackButtonPressed(self) -> bool:
         if (not self.started):
             self.started = True
             self.whiteRemaining = self.timePerSide
             self.blackRemaning = self.timePerSide
             self.whiteEndTime = self.whiteRemaining + time.time()
             self.turn = chess.WHITE
+            return True
         else:
-            if (self.turn == chess.BLACK):
+            finished = self.gameFinished()
+            if (self.turn == chess.BLACK and not finished):
                 self.whiteEndTime = self.whiteRemaining + time.time()
                 self.blackRemaning = (self.blackEndTime - time.time()) + self.increment
                 self.turn = chess.WHITE
-        
-            
+                return True
+            elif finished:
+                return False
+            elif self.turn == chess.WHITE:
+                return False
+            raise RuntimeError("Shouldnt have arrived at this point")
 
-    def whiteButtonPressed(self):
-        if (self.turn == chess.WHITE):
+    def whiteButtonPressed(self) -> bool:
+        finished = self.gameFinished()
+        if (self.turn == chess.WHITE and not finished):
             self.blackEndTime = self.blackRemaning + time.time()
             self.whiteRemaining = (self.whiteEndTime - time.time()) + self.increment
             self.turn = chess.BLACK
-        
+            return True
+        elif finished:
+            return False
+        elif self.turn == chess.WHITE:
+            return False
+        raise RuntimeError("Shouldnt have arrived at this point")
+
+
     def getRemainingTimes(self):
         if (not self.started):
             return ChessClock.formatTime(self.timePerSide), ChessClock.formatTime(self.timePerSide)
@@ -79,7 +93,35 @@ class ChessClock():
             if (self.turn == chess.BLACK):
                 whiteTime = self.whiteRemaining
                 blackTime = self.blackEndTime - time.time()
+            if (whiteTime <= 0):
+                whiteTime = 0
+            if (blackTime <= 0):
+                blackTime = 0
             return ChessClock.formatTime(whiteTime), ChessClock.formatTime(blackTime)
+    
+    def whiteFinished(self) -> bool:
+        if (self.started):
+            if self.turn == chess.WHITE:
+                whiteTime = self.whiteEndTime - time.time()
+                return (whiteTime <= 0)
+            elif self.turn == chess.BLACK:
+                return self.whiteRemaining <= 0
+        else:
+            return False
+    
+    
+    def blackFinished(self) -> bool:
+        if (self.started):
+            if (self.turn == chess.BLACK):
+                blackTime = self.blackEndTime - time.time()
+                return (blackTime < 0)
+            elif (self.turn == chess.WHITE):
+                return self.blackRemaning <= 0 
+        else:
+            return False
+
+    def gameFinished(self) -> bool:
+        return self.whiteFinished() or self.blackFinished()
 
     def formatTime(time : float):
         retval = "NOTHING"
@@ -138,7 +180,7 @@ class ChessGui:
         self.label= ttk.Label(self.root, font=("Arial"), textvariable=self.text)
         self.label.grid(row=1, column=1)
         self.clock = ChessClock()
-        self.clock.setAttributes(300, 5)
+        self.clock.setAttributes(3, 5)
         self.updateClock()
         self.root.mainloop()
         #pass #self.root.mainloop()
@@ -147,20 +189,26 @@ class ChessGui:
         
     #     self.root.mainloop()
     def whiteButtonPressed(self):
-        self.clock.whiteButtonPressed()
-        self.blackClock.config(background="light yellow")
-        self.whiteClock.config(background="white")
+        success = self.clock.whiteButtonPressed()
+        if success:
+            self.blackClock.config(background="light yellow")
+            self.whiteClock.config(background="white")
 
         
     def blackButtonPressed(self):
-        self.clock.blackButtonPressed()
-        self.whiteClock.config(background="light yellow")
-        self.blackClock.config(background="white")
+        success = self.clock.blackButtonPressed()
+        if success:
+            self.whiteClock.config(background="light yellow")
+            self.blackClock.config(background="white")
 
     def updateClock(self):
         white, black = self.clock.getRemainingTimes()
         self.whiteRemaining.set(white)
         self.blackRemaining.set(black)
+        if (self.clock.whiteFinished()):
+            self.whiteClock.config(background="red")
+        if (self.clock.blackFinished()):
+            self.blackClock.config(background="red")
         #self.whiteRemaining, self.blackRemaining = self.clock.getRemainingTimes()
         self.root.after(20, self.updateClock)
 
