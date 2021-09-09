@@ -40,6 +40,9 @@ from engine import Engine
 import time
 
 class ChessClock():
+
+    PAUSE = 3
+
     def __init__(self):
         self.started = False
         self.paused = False
@@ -58,7 +61,7 @@ class ChessClock():
             return True
         else:
             finished = self.gameFinished()
-            if (self.turn == chess.BLACK and not finished):
+            if (self.turn == chess.BLACK and not finished and not self.paused):
                 self.whiteEndTime = self.whiteRemaining + time.time()
                 self.blackRemaning = (self.blackEndTime - time.time()) + self.increment
                 self.turn = chess.WHITE
@@ -67,11 +70,13 @@ class ChessClock():
                 return False
             elif self.turn == chess.WHITE:
                 return False
+            elif self.paused:
+                return False
             raise RuntimeError("Shouldnt have arrived at this point")
 
     def whiteButtonPressed(self) -> bool:
         finished = self.gameFinished()
-        if (self.turn == chess.WHITE and not finished):
+        if (self.turn == chess.WHITE and not finished and not self.paused):
             self.blackEndTime = self.blackRemaning + time.time()
             self.whiteRemaining = (self.whiteEndTime - time.time()) + self.increment
             self.turn = chess.BLACK
@@ -80,19 +85,48 @@ class ChessClock():
             return False
         elif self.turn == chess.WHITE:
             return False
+        elif self.paused:
+            return False
         raise RuntimeError("Shouldnt have arrived at this point")
+
+    
+    def pause(self) -> bool:
+        if self.started and not self.gameFinished() and not self.paused:
+            if (self.turn == chess.WHITE):
+                self.whiteRemaining = self.whiteEndTime - time.time()
+            elif (self.turn == chess.BLACK):
+                self.blackRemaning = self.blackEndTime - time.time()
+            self.paused = True
+            return True
+        else:
+            return False
+    
+    def unpause(self) -> bool:
+        if self.started and not self.gameFinished() and self.paused:
+            self.paused = False
+            if self.turn == chess.BLACK:
+                self.blackEndTime = self.blackRemaning + time.time()
+            elif self.turn == chess.WHITE:
+                self.whiteEndTime = self.whiteRemaining + time.time()
+            return True
+        else:
+            return False
 
 
     def getRemainingTimes(self):
         if (not self.started):
             return ChessClock.formatTime(self.timePerSide), ChessClock.formatTime(self.timePerSide)
         else:
-            if (self.turn == chess.WHITE):
+            if (self.paused):
+                blackTime = self.blackRemaning
+                whiteTime = self.whiteRemaining
+            elif (self.turn == chess.WHITE):
                 whiteTime = self.whiteEndTime - time.time()
                 blackTime = self.blackRemaning
-            if (self.turn == chess.BLACK):
+            elif (self.turn == chess.BLACK):
                 whiteTime = self.whiteRemaining
                 blackTime = self.blackEndTime - time.time()
+
             if (whiteTime <= 0):
                 whiteTime = 0
             if (blackTime <= 0):
@@ -100,7 +134,7 @@ class ChessClock():
             return ChessClock.formatTime(whiteTime), ChessClock.formatTime(blackTime)
     
     def whiteFinished(self) -> bool:
-        if (self.started):
+        if (self.started and not self.paused):
             if self.turn == chess.WHITE:
                 whiteTime = self.whiteEndTime - time.time()
                 return (whiteTime <= 0)
@@ -109,9 +143,8 @@ class ChessClock():
         else:
             return False
     
-    
     def blackFinished(self) -> bool:
-        if (self.started):
+        if (self.started and not self.paused):
             if (self.turn == chess.BLACK):
                 blackTime = self.blackEndTime - time.time()
                 return (blackTime < 0)
@@ -168,6 +201,9 @@ class ChessGui:
         self.blackClock.grid(column=2, row=0, sticky=N, pady=10)
         self.blackTurn = ttk.Button(self.root, text="Black Finished", command=self.blackButtonPressed)
         self.blackTurn.grid(column=2, row=1, sticky=S, pady=10)
+
+        self.pauseButton = ttk.Button(self.root, text="Pause", command=self.togglePause)
+        self.pauseButton.grid(column=1, row=2, sticky=S, pady=10)
         
 
         self.canvas = Canvas(self.root, width = 300, height = 300)  
@@ -194,6 +230,15 @@ class ChessGui:
             self.blackClock.config(background="light yellow")
             self.whiteClock.config(background="white")
 
+    def togglePause(self):
+        if self.clock.paused:
+            success = self.clock.unpause()
+            if success:
+                self.pauseButton.configure(text="Pause")
+        elif not self.clock.paused:
+            success = self.clock.pause()
+            if success:
+                self.pauseButton.configure(text="Unpause")
         
     def blackButtonPressed(self):
         success = self.clock.blackButtonPressed()
@@ -211,7 +256,6 @@ class ChessGui:
             self.blackClock.config(background="red")
         #self.whiteRemaining, self.blackRemaining = self.clock.getRemainingTimes()
         self.root.after(20, self.updateClock)
-
 
     def updateChessBoard(self, board : chess.Board):
         self.text.set("Scoring...")
