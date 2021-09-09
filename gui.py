@@ -41,8 +41,6 @@ import time
 
 class ChessClock():
 
-    PAUSE = 3
-
     def __init__(self):
         self.started = False
         self.paused = False
@@ -83,7 +81,7 @@ class ChessClock():
             return True
         elif finished:
             return False
-        elif self.turn == chess.WHITE:
+        elif self.turn == chess.BLACK:
             return False
         elif self.paused:
             return False
