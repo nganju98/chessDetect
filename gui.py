@@ -74,11 +74,13 @@ class ChessClock():
 
     def whiteButtonPressed(self) -> bool:
         finished = self.gameFinished()
-        if (self.turn == chess.WHITE and not finished and not self.paused):
+        if (self.started and self.turn == chess.WHITE and not finished and not self.paused):
             self.blackEndTime = self.blackRemaning + time.time()
             self.whiteRemaining = (self.whiteEndTime - time.time()) + self.increment
             self.turn = chess.BLACK
             return True
+        elif not self.started:
+            return False
         elif finished:
             return False
         elif self.turn == chess.BLACK:
