@@ -216,7 +216,7 @@ class ChessGui:
         self.label= ttk.Label(self.root, font=("Arial"), textvariable=self.text)
         self.label.grid(row=1, column=1)
         self.clock = ChessClock()
-        self.clock.setAttributes(3, 5)
+        self.clock.setAttributes(300, 5)
         self.updateClock()
         self.root.mainloop()
         #pass #self.root.mainloop()

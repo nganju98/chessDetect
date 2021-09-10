@@ -118,12 +118,12 @@ class Runner:
         if (len(ids) > 1):
             if (equipment.Marker.WHITE_BUTTON.value not in ids):
                 result = equipment.Marker.WHITE_BUTTON
-                print('White button pressed ' + str(ids))
+                #print('White button pressed ' + str(ids))
                 
                     
             elif (equipment.Marker.BLACK_BUTTON.value not in ids):
                 result = equipment.Marker.BLACK_BUTTON
-                print('Black button pressed ' + str(ids))
+                #print('Black button pressed ' + str(ids))
         else:
             print("Couldn't find buttons")
 
@@ -153,49 +153,68 @@ class Runner:
             lineType=lineType)
         cv2.imshow('img',show)
 
-    def updateGame(self, boardCounts:BoardCount, gameStarted:bool, pieceSet : dict, gui:ChessGui, profiler: Profiler):
+    def updateGame(self, boardCounts:BoardCount, gameStarted:bool, pieceSet : dict, gui:ChessGui, clickSound:pygame.mixer.Sound, profiler: Profiler):
         
         #empty = chess.STATUS_EMPTY in self.game.status()
-        fromSquares = []
-        toSquares = []
+        disappearedSquares = []
+        appearedSquares = []
 
         if len(boardCounts.count) != 64:
             raise RuntimeError(f'Weird boardcounts, length={len(boardCounts)}')
 
+        sufficientSamples = True
         for key, val in boardCounts.count.items():
-            piece, _ = Quad.bestPiece(val, pieceSet)
+            piece, pieceCount = Quad.bestPiece(val, pieceSet)
+            if (piece is not None and pieceCount < 5):
+                sufficientSamples = False
             square : chess.Square = chess.parse_square(key)
             if (piece is not None):
                 if (piece !=  self.game.piece_at(square)):
-                    toSquares.append(square)
-                    if(not gameStarted):
-                        self.game.set_piece_at(square, piece)
+                    appearedSquares.append( (square, piece ))
             else:
                 if (self.game.piece_at(square) is not None):
-                    fromSquares.append(square)
-                    if(not gameStarted):
-                        self.game.remove_piece_at(square)
+                    disappearedSquares.append(square)
            
-        profiler.log(51, "Updated game")
-
-        if (len(fromSquares) > 0 or len(toSquares) > 0):
-           
-            if (gameStarted):
-                if (len(fromSquares) == 1 and len(toSquares) == 1):
-                    uciMove = f'{chess.square_name(fromSquares[0])}{chess.square_name(toSquares[0])}'
-                    print(f'Adding move - {uciMove}')
-                    self.game.push_uci(uciMove)
+        profiler.log(51, "Looked at piece locations")
+        if (gameStarted):
+            if (sufficientSamples):
+                if ( (len(disappearedSquares) > 0 or len(appearedSquares) > 0)):
+                    
+                    if (gameStarted and len(disappearedSquares) == 1 and len(appearedSquares) == 1):
+                        uciMove = chess.Move.from_uci(f'{chess.square_name(disappearedSquares[0])}{chess.square_name(appearedSquares[0][0])}')
+                        if (uciMove in self.game.legal_moves):
+                            print(f'Adding move - {uciMove}')
+                            self.game.push(uciMove)
+                            threading.Thread(target=gui.updateChessBoard, args=(self.game.copy(),)).start()
+                        else:
+                            print(f'{uciMove} is an illegal move')
+                    else:
+                        print(f'Error: {len(disappearedSquares)} have disappeared pieces and {len(appearedSquares)} have appeared pieces')
                 else:
-                    print(f'Error: {len(fromSquares)} have disappeared pieces and {len(toSquares)} have appared pieces')
+                    print(f'Processed turn but insufficient moves detected: fromSquares={disappearedSquares}, toSquares={appearedSquares}')
             
-            #svg = chess.svg.board(self.game, lastmove=lastmove)
-            
-            threading.Thread(target=gui.updateChessBoard, args=(self.game.copy(),)).start()
-            #gui.updateChessBoard(self.game.copy())
-            profiler.log(52, "Generated SVG")
+            else:
+                print("Insufficient samples")
+                
+        else:
+            if (sufficientSamples):
+                changed : bool = False
+                for square,piece in appearedSquares:
+                    self.game.set_piece_at(square, piece)
+                    changed = True
+
+                for square in disappearedSquares:
+                    self.game.remove_piece_at(square)
+                    changed = True
+                
+                if (changed):
+                    threading.Thread(target=gui.updateChessBoard, args=(self.game.copy(),)).start()
+                    threading.Thread(target=clickSound.play, args=()).start()
+                
+        
   
             
-        return True
+        return sufficientSamples
        
             
 
@@ -206,6 +225,8 @@ class Runner:
         cap = Camera()
         pygame.init()
         buttonSound = pygame.mixer.Sound('./assets/blurp.wav')
+        resolvedSound = pygame.mixer.Sound('./assets/resolved.wav')
+        clickSound = pygame.mixer.Sound('./assets/click.wav')
         #cap.set(cv2.CAP_PROP_FPS, 30)
         fps = FPS(5).start()
         lastCalibratedBoard = None
@@ -225,9 +246,21 @@ class Runner:
             else:
                 if (not buttonDepressed):
                     threading.Thread(target=buttonSound.play, args=()).start()
-                buttonDepressed = True
-                processTurn = True
-                gameStarted = True
+                    if buttonPushed == equipment.Marker.WHITE_BUTTON:
+                        print("White button press detected")
+                        gui.whiteButtonPressed()
+                    elif buttonPushed == equipment.Marker.BLACK_BUTTON:
+                        print("Black button press detected")
+                        gui.blackButtonPressed()
+
+                    if (gameStarted):
+                        processTurn = True
+                        recentCounts = BoardCountCache()
+                    else: 
+                        gameStarted = True
+                    buttonDepressed = True
+                        
+
 
             profiler.log(2, "processed buttons")
             board = Board(pieceSet, boardWidthInMm)
@@ -241,9 +274,10 @@ class Runner:
                     boardCounts = board.detectPieces(frame, profiler, True)
                     recentCounts.append(boardCounts)
                     profiler.log(60, "Processed full board")
-                    resolved = self.updateGame(recentCounts, gameStarted, pieceSet, gui, profiler)
+                    resolved = self.updateGame(recentCounts, gameStarted, pieceSet, gui, clickSound, profiler)
                     if (processTurn and resolved):
                         processTurn = False
+                        threading.Thread(target=resolvedSound.play, args=()).start()
                         #threading.Thread(target=beepy.beep, args=("ready",)).start()
 
                     profiler.log(61, "Updated game")
@@ -257,7 +291,7 @@ class Runner:
             if (quit):
                 break
             profiler.log(6, "Did keys")
-            fps.updateAndPrintAndReset(profiler)
+            #fps.updateAndPrintAndReset(profiler)
 
         cap.release()
         cv2.destroyAllWindows()

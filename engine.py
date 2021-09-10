@@ -10,7 +10,7 @@ class Engine:
 
     def getScoreForPosition(self, fen:str):
         self.stockfish.set_fen_position(fen)
-        print("Starting eval")
+        #print("Starting eval")
         eval = self.stockfish.get_evaluation()
         print(f'STOCKFISH EVAL: {eval}')
         return eval["value"]
