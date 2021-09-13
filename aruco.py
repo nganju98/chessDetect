@@ -5,6 +5,7 @@ import cv2.aruco as aruco
 import numpy as np
 import numpy.typing
 import equipment
+from equipment import Marker
 
 def getArucoVars():
     markerSize = 4
@@ -145,8 +146,26 @@ if __name__ == "__main__":
     ]
     pages = [page1, page2, page3]
     
+    
+    calibratorPage = [(Marker.BOARD_TOP_LEFT, sections[0]), 
+              (Marker.BOARD_TOP_RIGHT, sections[1]),
+              (Marker.BOARD_MIDDLE_LEFT, sections[2]),
+              (Marker.BOARD_MIDDLE_RIGHT, sections[3]),
+              (Marker.BOARD_BOTTOM_LEFT, sections[4]),
+              (Marker.BOARD_BOTTOM_RIGHT, sections[5])
+    ]
+
+
+    buttonPage = [(Marker.BLACK_BUTTON, sections[0]), 
+              (Marker.BLACK_BUTTON, sections[1]),
+              (Marker.WHITE_BUTTON, sections[2]),
+              (Marker.WHITE_BUTTON, sections[3]),
+    ]
+
+
     imageDict = {}
-    for piece in equipment.SET2:
+    pieceDict = equipment.getCurrentSet()
+    for _, piece in pieceDict.items():
         img = generatePiece(piece, markerSizeInMm, bufferSizeInMm, dpi)
         imageDict[piece.abbrev] = img
         
@@ -179,3 +198,33 @@ if __name__ == "__main__":
         
         
         cv2.imwrite(f'./temp/set2_white_page{ctr + 1}.png', pageImage)
+        
+    # 400 for buttons, 180 for board calibrators
+    pageImage = np.zeros((pageHeight, pageWidth), dtype="uint8")
+    pageImage.fill(255)
+    arucoDict, _ = getArucoVars()
+    for part in calibratorPage:
+        markerId = part[0]
+        section = part[1]
+        pieceCoord = [ int(buffer + section[0]), int(buffer + section[1]) ]
+        image = cv2.aruco.drawMarker(arucoDict, markerId.value, rint(dpi * .6)) 
+        pageImage[pieceCoord[1]:pieceCoord[1] + image.shape[0], pieceCoord[0]:pieceCoord[0] + image.shape[1]] = image
+        cv2.putText(pageImage, markerId.name, [pieceCoord[0],pieceCoord[1] + image.shape[0] + rint(dpi / 5)], 
+            cv2.FONT_HERSHEY_SIMPLEX, .75, color=(0,0,0), thickness=1, lineType=cv2.LINE_AA)
+    cv2.imwrite(f'./temp/set2_board_calibrators.png', pageImage)
+    
+    
+    # 400 for buttons, 180 for board calibrators
+    pageImage = np.zeros((pageHeight, pageWidth), dtype="uint8")
+    pageImage.fill(255)
+    arucoDict, _ = getArucoVars()
+    for part in buttonPage:
+        markerId = part[0]
+        section = part[1]
+        pieceCoord = [ int(buffer + section[0]), int(buffer + section[1]) ]
+        image = cv2.aruco.drawMarker(arucoDict, markerId.value, rint(dpi * 4/3)) 
+        pageImage[pieceCoord[1]:pieceCoord[1] + image.shape[0], pieceCoord[0]:pieceCoord[0] + image.shape[1]] = image
+        cv2.putText(pageImage, markerId.name, [pieceCoord[0],pieceCoord[1] + image.shape[0] + rint(dpi / 5)], 
+            cv2.FONT_HERSHEY_SIMPLEX, .75, color=(0,0,0), thickness=1, lineType=cv2.LINE_AA)
+    cv2.imwrite(f'./temp/set2_buttons.png', pageImage)
+

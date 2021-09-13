@@ -8,6 +8,8 @@ class Marker(Enum):
     BOARD_BOTTOM_LEFT = 3
     WHITE_BUTTON = 4
     BLACK_BUTTON = 5
+    BOARD_MIDDLE_LEFT = 6
+    BOARD_MIDDLE_RIGHT = 7
     WHITE_PAWN = 10
     WHITE_BISHOP = 19 # 11 has bad detection
     WHITE_KNIGHT = 12
