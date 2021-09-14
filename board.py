@@ -60,24 +60,27 @@ class Board:
     def __init__(self, pieceSet, boardWidthInMm):
         self.pieceSet = pieceSet
         self.boardWidthInMm = boardWidthInMm
+        self.buttonLocations = None
 
-    def calibrate(self, img, lastBoard : 'Board', profiler, draw=True):
+    def calibrate(self, frame : Frame, lastBoard : 'Board', profiler, draw=True):
         profiler.log(80, "Start calibrate")
         cornersFound = 0
         self.processed = datetime.datetime.now()
+        img = frame.img
         if (lastBoard is not None and lastBoard.calibrateSuccess):
             cornersFound = BoardFinder.findCornersAtLastLocation(img, lastBoard.corners, lastBoard.pixelsPerMm)
             profiler.log(81, "Tested last corners")
 
         if (cornersFound >= 2):        
             self.corners = deepcopy(lastBoard.corners)
+            self.buttonLocations = deepcopy(lastBoard.buttonLocations)
             self.calibrateSuccess = True           
         else:
-            print("Need to recalibrate corners")
+            print(f'f:{frame.frameNumber} Need to recalibrate corners')
             bboxs, ids = aruco.findArucoMarkers(img)
             self.corners = BoardFinder.findCorners(bboxs, ids, img.shape)
             if (self.corners is not None):
-                print("Found corners")
+                print(f'f:{frame.frameNumber} Found corners')
 
         
         if (self.corners is not None):
@@ -103,7 +106,61 @@ class Board:
             self.calibrateSuccess = False
             
         return self.calibrateSuccess
+    
+
+    def processButtons(self, frame: Frame, profiler):
+        ids = None
+        result = None
+        img = frame.img
+        if self.buttonLocations is None:
+            print(f'f:{frame.frameNumber}: Need to find buttons')
+            bboxs, ids = aruco.findArucoMarkers(img)
+            if (ids is None):
+                ids = np.empty([1,1])
+            ids = ids.flatten()
+            marks = []
+            whiteButtons = BoardFinder.markerFromId(bboxs, ids, Marker.WHITE_BUTTON)
+            marks.extend(whiteButtons)
+            blackButtons = BoardFinder.markerFromId(bboxs, ids, Marker.BLACK_BUTTON)
+            marks.extend(blackButtons)
+            if (len(marks) == 4):
+                self.buttonLocations =[]
+                for mark in marks:
+                    polygon = Polygon(mark)
+                    bufferSize = (polygon.bounds[2] - polygon.bounds[0]) / 4
+                    rect = [
+                        int(max(0, polygon.bounds[0] - bufferSize)), 
+                        int(max(0, polygon.bounds[1] - bufferSize)),
+                        int(min(img.shape[1] - 1, polygon.bounds[2] + bufferSize)),
+                        int(min(img.shape[0] - 1, polygon.bounds[3] + bufferSize))]
+                    self.buttonLocations.append(rect)
+                print (f'f:{frame.frameNumber}: Success, found 4 buttons')
+            else:
+                print(f'f:{frame.frameNumber}: Only found {len(marks)} buttons')
+
+        else:
+            ids = []
+            for location in self.buttonLocations:
+                subImg = img[location[1]:location[3],location[0]:location[2]]
+                bboxs, subIds = aruco.findArucoMarkers(subImg)
+                if (subIds is not None):
+                    ids.extend(subIds.flatten())
+                cv2.rectangle(img, [location[0], location[1]], [location[2], location[3]], color=(0,255,0), thickness=2)
+
         
+            if (len(ids) > 1):
+                if (Marker.WHITE_BUTTON.value not in ids):
+                    result = Marker.WHITE_BUTTON
+                    #print('White button pressed ' + str(ids))
+                    
+                        
+                elif (Marker.BLACK_BUTTON.value not in ids):
+                    result = Marker.BLACK_BUTTON
+                    #print('Black button pressed ' + str(ids))
+        
+
+        return result    
+
     def ageInMs(self):
         age : datetime.timedelta = datetime.datetime.now() - self.processed
         return age.total_seconds() * 1000
@@ -159,7 +216,7 @@ class Board:
         for row in self.origSquares:
             square : Quad
             for square in row:
-                pieceCounts = boardCounts.count[square.name] if square.name in boardCounts.count else []
+                pieceCounts = boardCounts.count[square.name] if square.name in boardCounts.count else {}
                 square.draw(img, pieceCounts, pieceSet, drawPieceCount)
 
     # def cornersChanged(self, bboxs, ids):
@@ -179,7 +236,7 @@ class Board:
         
 
 if __name__ == "__main__":
-    img = cv2.imread('./images/corners.jpg')
+    #img = cv2.imread('./images/corners.jpg')
     ##cv2.imshow('img',img)
     #cv2.waitKey(0)
     #board = BoardFinder(img).process(True)

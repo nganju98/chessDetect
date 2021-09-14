@@ -82,53 +82,6 @@ class Runner:
 
                
 
-    def processButtons(self, img, profiler):
-        ids = None
-        if self.buttonLocations is None:
-            bboxs, ids = findArucoMarkers(img)
-            if (ids is None):
-                ids = np.empty([1,1])
-            ids = ids.flatten()
-            marks = []
-            whiteButtons = BoardFinder.markerFromId(bboxs, ids, equipment.Marker.WHITE_BUTTON)
-            marks.extend(whiteButtons)
-            blackButtons = BoardFinder.markerFromId(bboxs, ids, equipment.Marker.BLACK_BUTTON)
-            marks.extend(blackButtons)
-            self.buttonLocations =[]
-           
-            for mark in marks:
-                polygon = Polygon(mark)
-                bufferSize = (polygon.bounds[2] - polygon.bounds[0]) / 2
-                rect = [
-                    int(max(0, polygon.bounds[0] - bufferSize)), 
-                    int(max(0, polygon.bounds[1] - bufferSize)),
-                    int(min(img.shape[1] - 1, polygon.bounds[2] + bufferSize)),
-                    int(min(img.shape[0] - 1, polygon.bounds[3] + bufferSize))]
-                self.buttonLocations.append(rect)
-        else:
-            ids = []
-            for location in self.buttonLocations:
-                subImg = img[location[1]:location[3],location[0]:location[2]]
-                bboxs, subIds = findArucoMarkers(subImg)
-                if (subIds is not None):
-                    ids.extend(subIds.flatten())
-                cv2.rectangle(img, [location[0], location[1]], [location[2], location[3]], color=(0,255,0), thickness=2)
-
-        result = None
-        if (len(ids) > 1):
-            if (equipment.Marker.WHITE_BUTTON.value not in ids):
-                result = equipment.Marker.WHITE_BUTTON
-                #print('White button pressed ' + str(ids))
-                
-                    
-            elif (equipment.Marker.BLACK_BUTTON.value not in ids):
-                result = equipment.Marker.BLACK_BUTTON
-                #print('Black button pressed ' + str(ids))
-        else:
-            print("Couldn't find buttons")
-
-        return result    
-
     def showImage(self, img, fps : FPS):
         show = None
         if (self.zoom):
@@ -231,7 +184,7 @@ class Runner:
         fps = FPS(5).start()
         lastCalibratedBoard = None
         gameStarted = False
-        buttonDepressed = False
+        buttonAlreadyDepressed = False
         processTurn = False
         recentCounts = BoardCountCache()
         
@@ -240,11 +193,15 @@ class Runner:
             frame = cap.read()
             profiler.log(1, "Read the frame")
 
-            buttonPushed = self.processButtons(frame.img, profiler)
-            if (buttonPushed is None):
-                buttonDepressed = False
-            else:
-                if (not buttonDepressed):
+            board = Board(pieceSet, boardWidthInMm)
+            board.calibrate(frame, lastCalibratedBoard, profiler,False)
+            profiler.log(2, "Calibrated board")
+            if (board.calibrateSuccess):
+                lastCalibratedBoard = board
+                buttonPushed = board.processButtons(frame, profiler)
+                if (buttonPushed is None):
+                    buttonAlreadyDepressed = False
+                elif (not buttonAlreadyDepressed):
                     threading.Thread(target=buttonSound.play, args=()).start()
                     if buttonPushed == equipment.Marker.WHITE_BUTTON:
                         print("White button press detected")
@@ -252,24 +209,15 @@ class Runner:
                     elif buttonPushed == equipment.Marker.BLACK_BUTTON:
                         print("Black button press detected")
                         gui.blackButtonPressed()
-
                     if (gameStarted):
                         processTurn = True
                         recentCounts = BoardCountCache()
                     else: 
                         gameStarted = True
-                    buttonDepressed = True
-                        
+                    buttonAlreadyDepressed = True
 
-
-            profiler.log(2, "processed buttons")
-            board = Board(pieceSet, boardWidthInMm)
-            board.calibrate(frame.img, lastCalibratedBoard, profiler,False)
-            profiler.log(3, "Calibrated board")
-            if(board.calibrateSuccess):
-                lastCalibratedBoard = board
-                profiler.log(4, "Drew squares")
-                boardCounts = {}
+                profiler.log(3, "processed buttons")
+            
                 if (processTurn or not gameStarted):
                     boardCounts = board.detectPieces(frame, profiler, True)
                     recentCounts.append(boardCounts)
@@ -282,7 +230,11 @@ class Runner:
 
                     profiler.log(61, "Updated game")
                 board.drawOrigSquares(frame.img, recentCounts, pieceSet, True)
-            
+                profiler.log(4, "Drew squares")
+            else:
+                print ("Board uncalibrated")
+                lastCalibratedBoard = None
+
             self.showImage(frame.img, fps)
             profiler.log(4, "Show image")
             
