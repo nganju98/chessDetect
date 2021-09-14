@@ -81,9 +81,10 @@ class Board:
             self.calibrateSuccess = True      
         else:
             print(f'f:{frame.frameNumber} Need to recalibrate corners')
-            bboxs, ids = aruco.findArucoMarkers(img)
+            bboxs, ids = aruco.findArucoMarkers(img, False)
             self.corners = BoardFinder.findCorners(bboxs, ids, img.shape)
-            if (self.corners is not None):
+            self.buttonLocations = Board.findButtonLocations(frame, bboxs, ids)
+            if (self.corners is not None and self.buttonLocations is not None):
                 print(f'f:{frame.frameNumber} Found corners')
                 self.rect = np.asarray([self.corners[0][0], self.corners[1][0], 
                 self.corners[2][0], self.corners[3][0]], dtype=np.float32)
@@ -112,31 +113,7 @@ class Board:
         result = None
         img = frame.img
         if self.buttonLocations is None:
-            print(f'f:{frame.frameNumber}: Need to find buttons')
-            bboxs, ids = aruco.findArucoMarkers(img)
-            if (ids is None):
-                ids = np.empty([1,1])
-            ids = ids.flatten()
-            marks = []
-            whiteButtons = BoardFinder.markerFromId(bboxs, ids, Marker.WHITE_BUTTON)
-            marks.extend(whiteButtons)
-            blackButtons = BoardFinder.markerFromId(bboxs, ids, Marker.BLACK_BUTTON)
-            marks.extend(blackButtons)
-            if (len(marks) == 4):
-                self.buttonLocations =[]
-                for mark in marks:
-                    polygon = Polygon(mark)
-                    bufferSize = (polygon.bounds[2] - polygon.bounds[0]) / 4
-                    rect = [
-                        int(max(0, polygon.bounds[0] - bufferSize)), 
-                        int(max(0, polygon.bounds[1] - bufferSize)),
-                        int(min(img.shape[1] - 1, polygon.bounds[2] + bufferSize)),
-                        int(min(img.shape[0] - 1, polygon.bounds[3] + bufferSize))]
-                    self.buttonLocations.append(rect)
-                print (f'f:{frame.frameNumber}: Success, found 4 buttons')
-            else:
-                print(f'f:{frame.frameNumber}: Only found {len(marks)} buttons')
-
+            print(f'f:{frame.frameNumber}: Cant process buttons, have no button locations')
         else:
             ids = []
             for location in self.buttonLocations:
@@ -147,7 +124,7 @@ class Board:
                 cv2.rectangle(img, [location[0], location[1]], [location[2], location[3]], color=(0,255,0), thickness=2)
 
         
-            if (len(ids) > 1):
+            if (len(ids) == 2):
                 if (Marker.WHITE_BUTTON.value not in ids):
                     result = Marker.WHITE_BUTTON
                     #print('White button pressed ' + str(ids))
@@ -159,6 +136,33 @@ class Board:
         
 
         return result    
+
+    def findButtonLocations(frame : Frame, bboxs, ids):
+        if (ids is None):
+            return None       
+        ids = ids.flatten()
+        marks = []
+        whiteButtons = BoardFinder.markerFromId(bboxs, ids, Marker.WHITE_BUTTON)
+        marks.extend(whiteButtons)
+        blackButtons = BoardFinder.markerFromId(bboxs, ids, Marker.BLACK_BUTTON)
+        marks.extend(blackButtons)
+        if (len(marks) == 4):
+            buttonLocations =[]
+            for mark in marks:
+                polygon = Polygon(mark)
+                bufferSize = (polygon.bounds[2] - polygon.bounds[0]) / 4
+                rect = [
+                    int(max(0, polygon.bounds[0] - bufferSize)), 
+                    int(max(0, polygon.bounds[1] - bufferSize)),
+                    int(min(frame.img.shape[1] - 1, polygon.bounds[2] + bufferSize)),
+                    int(min(frame.img.shape[0] - 1, polygon.bounds[3] + bufferSize))]
+                buttonLocations.append(rect)
+            print (f'f:{frame.frameNumber}: Success, found 4 buttons')
+            return buttonLocations
+        else:
+            print(f'f:{frame.frameNumber}: Only found {len(marks)} buttons')
+            return None
+
 
     def ageInMs(self):
         age : datetime.timedelta = datetime.datetime.now() - self.processed

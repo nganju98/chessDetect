@@ -202,18 +202,22 @@ class Runner:
                 if (buttonPushed is None):
                     buttonAlreadyDepressed = False
                 elif (not buttonAlreadyDepressed):
-                    threading.Thread(target=buttonSound.play, args=()).start()
+                    success = False
                     if buttonPushed == equipment.Marker.WHITE_BUTTON:
-                        print("White button press detected")
-                        gui.whiteButtonPressed()
+                        print(f'f:{frame.frameNumber} White button press detected')
+                        success = gui.whiteButtonPressed()
                     elif buttonPushed == equipment.Marker.BLACK_BUTTON:
-                        print("Black button press detected")
-                        gui.blackButtonPressed()
-                    if (gameStarted):
-                        processTurn = True
-                        recentCounts = BoardCountCache()
-                    else: 
-                        gameStarted = True
+                        print(f'f:{frame.frameNumber} Black button press detected')
+                        success = gui.blackButtonPressed()
+                    if success:
+                        threading.Thread(target=buttonSound.play, args=()).start()
+                        if (gameStarted):
+                            processTurn = True
+                            recentCounts = BoardCountCache()
+                        else: 
+                            gameStarted = True
+                    else:
+                        print("Button press unsuccessful")
                     buttonAlreadyDepressed = True
 
                 profiler.log(3, "processed buttons")
@@ -243,7 +247,7 @@ class Runner:
             if (quit):
                 break
             profiler.log(6, "Did keys")
-            fps.updateAndPrintAndReset(profiler)
+            #fps.updateAndPrintAndReset(profiler)
 
         cap.release()
         cv2.destroyAllWindows()

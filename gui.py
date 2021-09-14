@@ -229,6 +229,7 @@ class ChessGui:
         if success:
             self.blackClock.config(background="light yellow")
             self.whiteClock.config(background="white")
+        return success
 
     def togglePause(self):
         if self.clock.paused:
@@ -245,6 +246,7 @@ class ChessGui:
         if success:
             self.whiteClock.config(background="light yellow")
             self.blackClock.config(background="white")
+        return success
 
     def updateClock(self):
         white, black = self.clock.getRemainingTimes()
