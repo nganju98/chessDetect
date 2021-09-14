@@ -243,7 +243,7 @@ class Runner:
             if (quit):
                 break
             profiler.log(6, "Did keys")
-            #fps.updateAndPrintAndReset(profiler)
+            fps.updateAndPrintAndReset(profiler)
 
         cap.release()
         cv2.destroyAllWindows()

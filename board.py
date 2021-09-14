@@ -74,36 +74,35 @@ class Board:
         if (cornersFound >= 2):        
             self.corners = deepcopy(lastBoard.corners)
             self.buttonLocations = deepcopy(lastBoard.buttonLocations)
-            self.calibrateSuccess = True           
+            self.rect = deepcopy(lastBoard.rect)
+            self.pixelsPerMm = lastBoard.pixelsPerMm
+            self.origSquares = lastBoard.origSquares #Quad is immutable so we can just take the references
+            profiler.log(86, "Copied 5 params from last board")    
+            self.calibrateSuccess = True      
         else:
             print(f'f:{frame.frameNumber} Need to recalibrate corners')
             bboxs, ids = aruco.findArucoMarkers(img)
             self.corners = BoardFinder.findCorners(bboxs, ids, img.shape)
             if (self.corners is not None):
                 print(f'f:{frame.frameNumber} Found corners')
+                self.rect = np.asarray([self.corners[0][0], self.corners[1][0], 
+                self.corners[2][0], self.corners[3][0]], dtype=np.float32)
+                
+                avgLength = ((self.rect[1][0] - self.rect[0][0]) +
+                        (self.rect[2][0] - self.rect[3][0]) +
+                        (self.rect[3][1] - self.rect[0][1]) +
+                        (self.rect[2][1] - self.rect[1][1])) / 4
+                self.pixelsPerMm = avgLength/self.boardWidthInMm
 
-        
-        if (self.corners is not None):
-            self.rect = np.asarray([self.corners[0][0], self.corners[1][0], 
-            self.corners[2][0], self.corners[3][0]], dtype=np.float32)
-            
-            avgLength = ((self.rect[1][0] - self.rect[0][0]) +
-                    (self.rect[2][0] - self.rect[3][0]) +
-                    (self.rect[3][1] - self.rect[0][1]) +
-                    (self.rect[2][1] - self.rect[1][1])) / 4
-            self.pixelsPerMm = avgLength/self.boardWidthInMm
-
-            warpedImg, warpMatrix, warpWidth, warpHeight = BoardFinder.getWarpBoard(img, self.rect, draw)
-            
-            warpedSquares = BoardFinder.getSquares(warpedImg, warpWidth, warpHeight, draw, draw)
-            _, inverseMatrix = cv2.invert(warpMatrix)
-            self.origSquares = BoardFinder.getOriginalSquares(inverseMatrix, warpedSquares)
-            profiler.log(81, "Found original squares")
-
-
-            self.calibrateSuccess = True
-        else:
-            self.calibrateSuccess = False
+                warpedImg, warpMatrix, warpWidth, warpHeight = BoardFinder.getWarpBoard(img, self.rect, draw)
+                
+                warpedSquares = BoardFinder.getSquares(warpedImg, warpWidth, warpHeight, draw, draw)
+                _, inverseMatrix = cv2.invert(warpMatrix)
+                self.origSquares = BoardFinder.getOriginalSquares(inverseMatrix, warpedSquares)
+                profiler.log(81, "Found original squares")
+                self.calibrateSuccess = True
+            else:
+                self.calibrateSuccess = False
             
         return self.calibrateSuccess
     
