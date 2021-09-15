@@ -106,9 +106,7 @@ class Runner:
             lineType=lineType)
         cv2.imshow('img',show)
 
-    def updateGame(self, boardCounts:BoardCount, gameStarted:bool, pieceSet : dict, gui:ChessGui, clickSound:pygame.mixer.Sound, profiler: Profiler):
-        
-        #empty = chess.STATUS_EMPTY in self.game.status()
+    def getBoardChanges(self, boardCounts:BoardCountCache, pieceSet):
         disappearedSquares = []
         appearedSquares = []
 
@@ -127,25 +125,27 @@ class Runner:
             else:
                 if (self.game.piece_at(square) is not None):
                     disappearedSquares.append(square)
-           
+        return sufficientSamples, appearedSquares, disappearedSquares
+
+
+
+    def updateGame(self, boardCounts:BoardCountCache, gameStarted:bool, pieceSet : dict, gui:ChessGui, clickSound:pygame.mixer.Sound, profiler: Profiler):
+        
+        sufficientSamples, appearedSquares, disappearedSquares = self.getBoardChanges(boardCounts, pieceSet)
+        
         profiler.log(51, "Looked at piece locations")
         if (gameStarted):
-            if (sufficientSamples):
-                if ( (len(disappearedSquares) > 0 or len(appearedSquares) > 0)):
-                    
-                    if (gameStarted and len(disappearedSquares) == 1 and len(appearedSquares) == 1):
-                        uciMove = chess.Move.from_uci(f'{chess.square_name(disappearedSquares[0])}{chess.square_name(appearedSquares[0][0])}')
-                        if (uciMove in self.game.legal_moves):
-                            print(f'Adding move - {uciMove}')
-                            self.game.push(uciMove)
-                            threading.Thread(target=gui.updateChessBoard, args=(self.game.copy(),)).start()
-                        else:
-                            print(f'{uciMove} is an illegal move')
+            if (sufficientSamples):   
+                if (len(disappearedSquares) == 1 and len(appearedSquares) == 1):
+                    uciMove = chess.Move.from_uci(f'{chess.square_name(disappearedSquares[0])}{chess.square_name(appearedSquares[0][0])}')
+                    if (uciMove in self.game.legal_moves):
+                        print(f'Adding move - {uciMove}')
+                        self.game.push(uciMove)
+                        threading.Thread(target=gui.updateChessBoard, args=(self.game.copy(),)).start()
                     else:
-                        print(f'Error: {len(disappearedSquares)} have disappeared pieces and {len(appearedSquares)} have appeared pieces')
+                        print(f'{uciMove} is an illegal move')
                 else:
-                    print(f'Processed turn but insufficient moves detected: fromSquares={disappearedSquares}, toSquares={appearedSquares}')
-            
+                    print(f'Error: {len(disappearedSquares)} have disappeared pieces and {len(appearedSquares)} have appeared pieces')
             else:
                 print("Insufficient samples")
                 
