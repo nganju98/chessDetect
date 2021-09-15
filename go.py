@@ -151,45 +151,6 @@ class Runner:
                     disappearedSquares.append(square)
         return sufficientSamples, appearedSquares, disappearedSquares
 
-
-
-    def updateGame(self, boardCounts:BoardCountCache, gameStarted:bool, pieceSet : dict, gui:ChessGui, clickSound:pygame.mixer.Sound, profiler: Profiler):
-        
-        sufficientSamples, appearedSquares, disappearedSquares = self.getBoardChanges(boardCounts, pieceSet)
-        
-        profiler.log(51, "Looked at piece locations")
-        if (gameStarted):
-            if (sufficientSamples):   
-                if (len(disappearedSquares) == 1 and len(appearedSquares) == 1):
-                    uciMove = chess.Move.from_uci(f'{chess.square_name(disappearedSquares[0])}{chess.square_name(appearedSquares[0][0])}')
-                    if (uciMove in self.game.legal_moves):
-                        print(f'Adding move - {uciMove}')
-                        self.game.push(uciMove)
-                        threading.Thread(target=gui.updateChessBoard, args=(self.game.copy(),)).start()
-                    else:
-                        print(f'{uciMove} is an illegal move')
-                else:
-                    print(f'Error: {len(disappearedSquares)} have disappeared pieces and {len(appearedSquares)} have appeared pieces')
-            else:
-                print("Insufficient samples")
-                
-        else:
-            if (sufficientSamples):
-                changed : bool = False
-                for square,piece in appearedSquares:
-                    self.game.set_piece_at(square, piece)
-                    changed = True
-
-                for square in disappearedSquares:
-                    self.game.remove_piece_at(square)
-                    changed = True
-                
-                if (changed):
-                    threading.Thread(target=gui.updateChessBoard, args=(self.game.copy(),)).start()
-                    threading.Thread(target=clickSound.play, args=()).start()
-                
-        return sufficientSamples
-
         
     def pregame(self, frame:Frame, board: Board, recentCounts:BoardCountCache, profiler: Profiler):
         nextState = GameState.PREGAME
@@ -299,85 +260,6 @@ class Runner:
                 break
             profiler.log(6, "Did keys")
             fps.updateAndPrintAndReset(profiler)
-
-        cap.release()
-        cv2.destroyAllWindows()
-
-
-    def run_old(self):
-        gui : ChessGui = ChessGui()
-        threading.Thread(target=gui.start, args=()).start()
-
-        cap = Camera()
-        
-        #cap.set(cv2.CAP_PROP_FPS, 30)
-        fps = FPS(5).start()
-        lastCalibratedBoard = None
-        gameStarted = False
-        buttonAlreadyDepressed = False
-        processTurn = False
-        recentCounts = BoardCountCache()
-        
-        while True:
-            profiler = Profiler()
-            frame = cap.read()
-            profiler.log(1, "Read the frame")
-
-            board = Board(self.pieceSet, self.boardWidthInMm)
-            board.calibrate(frame, lastCalibratedBoard, profiler,False)
-            profiler.log(2, "Calibrated board")
-            if (board.calibrateSuccess):
-                lastCalibratedBoard = board
-                buttonPushed = board.processButtons(frame, profiler)
-                if (buttonPushed is None):
-                    buttonAlreadyDepressed = False
-                elif (not buttonAlreadyDepressed):
-                    success = False
-                    if buttonPushed == equipment.Marker.WHITE_BUTTON:
-                        print(f'f:{frame.frameNumber} White button press detected')
-                        success = gui.whiteButtonPressed()
-                    elif buttonPushed == equipment.Marker.BLACK_BUTTON:
-                        print(f'f:{frame.frameNumber} Black button press detected')
-                        success = gui.blackButtonPressed()
-                    if success:
-                        self.playSound(AlertSound.BUTTON)
-                        if (gameStarted):
-                            processTurn = True
-                            recentCounts = BoardCountCache()
-                        else: 
-                            gameStarted = True
-                    else:
-                        print("Button press unsuccessful")
-                    buttonAlreadyDepressed = True
-
-                profiler.log(3, "processed buttons")
-            
-                if (processTurn or not gameStarted):
-                    boardCounts = board.detectPieces(frame, profiler, True)
-                    recentCounts.append(boardCounts)
-                    profiler.log(60, "Processed full board")
-                    resolved = self.updateGame(recentCounts, gameStarted, self.pieceSet, gui, profiler)
-                    if (processTurn and resolved):
-                        processTurn = False
-                        self.playSound(AlertSound.RESOLVED)
-                        #threading.Thread(target=beepy.beep, args=("ready",)).start()
-
-                    profiler.log(61, "Updated game")
-                board.drawOrigSquares(frame.img, recentCounts, self.pieceSet, True)
-                profiler.log(4, "Drew squares")
-            else:
-                print ("Board uncalibrated")
-                lastCalibratedBoard = None
-
-            self.showImage(frame.img, fps)
-            profiler.log(4, "Show image")
-            
-            k = cv2.waitKey(1) & 0xff
-            quit = self.doKeys(k, cap, frame.img, profiler)
-            if (quit):
-                break
-            profiler.log(6, "Did keys")
-            #fps.updateAndPrintAndReset(profiler)
 
         cap.release()
         cv2.destroyAllWindows()
