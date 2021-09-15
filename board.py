@@ -53,6 +53,9 @@ class BoardCountCache:
         for boardCount in self.cache:
             self.update(boardCount, True)
 
+    def clear(self):
+        self.cache : Deque = deque()
+        self.count = {}
 
 
 class Board:
@@ -85,7 +88,7 @@ class Board:
             self.corners = BoardFinder.findCorners(bboxs, ids, img.shape)
             self.buttonLocations = Board.findButtonLocations(frame, bboxs, ids)
             if (self.corners is not None and self.buttonLocations is not None):
-                print(f'f:{frame.frameNumber} Found corners')
+                print(f'f:{frame.frameNumber} Found corners and buttons')
                 self.rect = np.asarray([self.corners[0][0], self.corners[1][0], 
                 self.corners[2][0], self.corners[3][0]], dtype=np.float32)
                 

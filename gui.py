@@ -38,12 +38,15 @@ from tkinter import Canvas, StringVar, Tk, ttk
 import tkinter as tk
 from engine import Engine
 import time
-
+from equipment import Marker
+from collections import deque
+from typing import Deque
 class ChessClock():
 
     def __init__(self):
         self.started = False
         self.paused = False
+        self.canUndo = False
 
     def setAttributes(self, timePerSide,increment):
         self.timePerSide = timePerSide
@@ -56,6 +59,7 @@ class ChessClock():
             self.blackRemaning = self.timePerSide
             self.whiteEndTime = self.whiteRemaining + time.time()
             self.turn = chess.WHITE
+            self.canUndo = False
             return True
         else:
             finished = self.gameFinished()
@@ -63,6 +67,7 @@ class ChessClock():
                 self.whiteEndTime = self.whiteRemaining + time.time()
                 self.blackRemaning = (self.blackEndTime - time.time()) + self.increment
                 self.turn = chess.WHITE
+                self.canUndo = True
                 return True
             elif finished:
                 return False
@@ -78,6 +83,7 @@ class ChessClock():
             self.blackEndTime = self.blackRemaning + time.time()
             self.whiteRemaining = (self.whiteEndTime - time.time()) + self.increment
             self.turn = chess.BLACK
+            self.canUndo = True
             return True
         elif not self.started:
             return False
@@ -88,6 +94,23 @@ class ChessClock():
         elif self.paused:
             return False
         raise RuntimeError("Shouldnt have arrived at this point")
+    
+    def undoButtonPress(self) -> bool:
+        if (self.canUndo):
+            if (self.turn == chess.WHITE):
+                self.turn = chess.BLACK
+                self.blackEndTime = (self.blackRemaning - self.increment)  + time.time()
+
+            elif (self.turn == chess.BLACK):
+                self.turn = chess.WHITE
+                self.whiteEndTime = (self.whiteRemaining - self.increment) + time.time()
+
+            self.canUndo = False
+            return True
+        else:
+            print("Cant undo")
+            return False
+            
 
     
     def pause(self) -> bool:
@@ -205,6 +228,9 @@ class ChessGui:
         self.pauseButton = ttk.Button(self.root, text="Pause", command=self.togglePause)
         self.pauseButton.grid(column=1, row=2, sticky=S, pady=10)
         
+        self.undoButton = ttk.Button(self.root, text="Undo", command=self.undoButtonPress)
+        self.undoButton.grid(column=2, row=2, sticky=S, pady=10)
+        
 
         self.canvas = Canvas(self.root, width = 300, height = 300)  
         self.canvas.grid(column=1,row=0, sticky=N, pady=10)
@@ -247,6 +273,26 @@ class ChessGui:
             self.whiteClock.config(background="light yellow")
             self.blackClock.config(background="white")
         return success
+
+        
+    def undoButtonPress(self):
+        success = self.clock.undoButtonPress()
+        if success:
+            if self.clock.turn == chess.WHITE:
+                self.whiteClock.config(background="light yellow")
+                self.blackClock.config(background="white")
+            elif self.clock.turn == chess.BLACK:
+                self.blackClock.config(background="light yellow")
+                self.whiteClock.config(background="white")
+        return success
+
+    def buttonPressed(self, button : Marker):
+        if button == Marker.WHITE_BUTTON:
+            return self.whiteButtonPressed()
+        elif button == Marker.BLACK_BUTTON:
+            return self.blackButtonPressed()
+        else:
+            return False
 
     def updateClock(self):
         white, black = self.clock.getRemainingTimes()
