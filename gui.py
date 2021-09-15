@@ -1,7 +1,8 @@
 
+from board import Board
 import os
 import ctypes.util
-from tkinter.constants import N,S,E,W
+from tkinter.constants import ANCHOR, N, NSEW,S,E,W
 
 def set_dll_search_path():
    # Python 3.8 no longer searches for DLLs in PATH, so we have to add
@@ -217,7 +218,7 @@ class ChessGui:
         self.whiteClock = ttk.Label(self.root, font=("Arial", 48), background="white", textvariable=self.whiteRemaining)
         self.whiteClock.grid(column=0, row=0, sticky=N, pady=10)
         self.whiteTurn = ttk.Button(self.root, text="White Finished", command=self.whiteButtonPressed)
-        self.whiteTurn.grid(column=0, row=1, sticky=S, pady=10)
+        self.whiteTurn.grid(column=0, row=1, sticky=N, pady=10)
         
         self.blackRemaining = StringVar()
         self.blackClock = ttk.Label(self.root, font=("Arial", 48), background="white", textvariable=self.blackRemaining)   
@@ -231,16 +232,22 @@ class ChessGui:
         self.undoButton = ttk.Button(self.root, text="Undo", command=self.undoButtonPress)
         self.undoButton.grid(column=2, row=2, sticky=S, pady=10)
         
+        self.historyFrame = ttk.LabelFrame(self.root, text="Turn history")
+        self.historyFrame.grid(column=0, row=2, sticky=NSEW)
+        self.historyString=StringVar()
+        self.history = ttk.Label(self.historyFrame, textvariable=self.historyString)
+        self.history.grid(column=0, row=0)
+        self.root.rowconfigure(2, weight=3)
 
         self.canvas = Canvas(self.root, width = 300, height = 300)  
-        self.canvas.grid(column=1,row=0, sticky=N, pady=10)
+        self.canvas.grid(column=1,row=0, rowspan=3, sticky=N, pady=10)
         #self.canvas.pack()  
         self.img = ImageTk.PhotoImage(Image.open("./assets/blank.png"))  
         self.imageContainer = self.canvas.create_image(0, 0, anchor=tk.NW, image=self.img) 
         self.text = StringVar()
         self.text.set("Update Text")
         self.label= ttk.Label(self.root, font=("Arial"), textvariable=self.text)
-        self.label.grid(row=1, column=1)
+        self.label.grid(row=3, column=1)
         self.clock = ChessClock()
         self.clock.setAttributes(300, 5)
         self.updateClock()
@@ -326,14 +333,35 @@ class ChessGui:
             self.text.set(str(score))
         else:
             self.text.set("Invalid board")
+        self.historyString.set(ChessGui.generateHistory(board))
         #profiler.log(53, "Made image")
-  
+    
+    def generateHistory(board:Board):
+        
+        moves = board.move_stack
+
+        temp = chess.Board()
+        retval = ""
+        for ctr, move in enumerate(moves):
+            if ctr % 2 == 0:
+                retval += f'{int(ctr/2) + 1}. {temp.san(move)}  '
+            else:
+                retval += f'{temp.san(move)} \n'
+            #print(temp.san(move))
+            temp.push(move)
+        return retval
 
 if __name__ == "__main__":
-    print(ChessClock.formatTime(300))
-    print(ChessClock.formatTime(3725.5))
-    print(ChessClock.formatTime(12.1))
-    x = 23
+    pass
+    board = chess.Board()
+    board.push_uci("e2e4")
+    board.push_uci("e7e5")
+    board.push_uci("d2d4")
+    print(ChessGui.generateHistory(board))
+    # print(ChessClock.formatTime(300))
+    # print(ChessClock.formatTime(3725.5))
+    # print(ChessClock.formatTime(12.1))
+    # x = 23
     # clock = ChessClock()
     # clock.setAttributes(300, 5)
 
@@ -349,8 +377,8 @@ if __name__ == "__main__":
     
     # time.sleep(3)
     # print(clock.getRemainingTimes())
-    c = ChessGui()
-    c.start()
+    # c = ChessGui()
+    # c.start()
     # threading.Thread(target=c.start, args=()).start()
     # time.sleep(2)
     
