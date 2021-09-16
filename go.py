@@ -232,6 +232,11 @@ class Runner:
         gameState = GameState.PREGAME
         while True:
             profiler = Profiler()
+            if self.gui.restartGameFlag:
+                gameState = GameState.PREGAME
+                recentCounts.clear()
+                self.gui.restartGameFlag = False
+                self.game = chess.Board.empty()
             frame = cap.read()
             profiler.log(1, "Read the frame")
             board = Board(self.pieceSet, self.boardWidthInMm)

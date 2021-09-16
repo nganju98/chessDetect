@@ -205,7 +205,22 @@ class ChessGui:
         pass
 
         
-    def start(self):
+    def start(self, showDebugButtons = False):
+
+        self.restartGameFlag = False
+        self.doLayout(showDebugButtons)
+        self.clock = ChessClock()
+        self.clock.setAttributes(300, 5)
+        self.updateClock()
+        self.root.mainloop()
+        #pass #self.root.mainloop()
+
+    # def doMainLoop(self):
+        
+    #     self.root.mainloop()
+
+    def doLayout(self, showDebugButtons):
+        
         self.root = Tk()  
         style = ttk.Style(self.root)
         self.root.geometry("800x400")
@@ -217,20 +232,22 @@ class ChessGui:
         self.whiteRemaining = StringVar()
         self.whiteClock = ttk.Label(self.root, font=("Arial", 48), background="white", textvariable=self.whiteRemaining)
         self.whiteClock.grid(column=0, row=0, sticky=N, pady=10)
-        self.whiteTurn = ttk.Button(self.root, text="White Finished", command=self.whiteButtonPressed)
-        self.whiteTurn.grid(column=0, row=1, sticky=N, pady=10)
+        
         
         self.blackRemaining = StringVar()
         self.blackClock = ttk.Label(self.root, font=("Arial", 48), background="white", textvariable=self.blackRemaining)   
         self.blackClock.grid(column=2, row=0, sticky=N, pady=10)
-        self.blackTurn = ttk.Button(self.root, text="Black Finished", command=self.blackButtonPressed)
-        self.blackTurn.grid(column=2, row=1, sticky=S, pady=10)
+        
+        if (showDebugButtons):
+            self.whiteTurn = ttk.Button(self.root, text="White Finished", command=self.whiteButtonPressed)
+            self.whiteTurn.grid(column=0, row=1, sticky=N, pady=10)
+            self.blackTurn = ttk.Button(self.root, text="Black Finished", command=self.blackButtonPressed)
+            self.blackTurn.grid(column=2, row=1, sticky=S, pady=10)
+            self.undoButton = ttk.Button(self.root, text="Undo", command=self.undoButtonPress)
+            self.undoButton.grid(column=2, row=2, sticky=S, pady=10)
 
         self.pauseButton = ttk.Button(self.root, text="Pause", command=self.togglePause)
         self.pauseButton.grid(column=1, row=2, sticky=S, pady=10)
-        
-        self.undoButton = ttk.Button(self.root, text="Undo", command=self.undoButtonPress)
-        self.undoButton.grid(column=2, row=2, sticky=S, pady=10)
         
         self.historyFrame = ttk.LabelFrame(self.root, text="Turn history")
         self.historyFrame.grid(column=0, row=2, sticky=NSEW)
@@ -248,15 +265,23 @@ class ChessGui:
         self.text.set("Update Text")
         self.label= ttk.Label(self.root, font=("Arial"), textvariable=self.text)
         self.label.grid(row=3, column=1)
+
+        menubar = tk.Menu(self.root)
+        self.gameMenu = tk.Menu(menubar, tearoff=0)
+        self.gameMenu.add_command(label="New Game", command=self.restartGame)
+        self.gameMenu.add_command(label="Pause", command=self.togglePause)
+        menubar.add_cascade(label="Game", menu=self.gameMenu)
+        self.root.config(menu=menubar)
+
+    def restartGame(self):
+        self.restartGameFlag = True
+        print("setting restartGame to true")
         self.clock = ChessClock()
         self.clock.setAttributes(300, 5)
         self.updateClock()
-        self.root.mainloop()
-        #pass #self.root.mainloop()
+        self.whiteClock.config(background="white")
+        self.blackClock.config(background="white")
 
-    # def doMainLoop(self):
-        
-    #     self.root.mainloop()
     def whiteButtonPressed(self):
         success = self.clock.whiteButtonPressed()
         if success:
@@ -269,10 +294,12 @@ class ChessGui:
             success = self.clock.unpause()
             if success:
                 self.pauseButton.configure(text="Pause")
+                self.gameMenu.entryconfigure(1, label="Pause")
         elif not self.clock.paused:
             success = self.clock.pause()
             if success:
                 self.pauseButton.configure(text="Unpause")
+                self.gameMenu.entryconfigure(1, label="Unpause")
         
     def blackButtonPressed(self):
         success = self.clock.blackButtonPressed()
@@ -353,11 +380,11 @@ class ChessGui:
 
 if __name__ == "__main__":
     pass
-    board = chess.Board()
-    board.push_uci("e2e4")
-    board.push_uci("e7e5")
-    board.push_uci("d2d4")
-    print(ChessGui.generateHistory(board))
+    # board = chess.Board()
+    # board.push_uci("e2e4")
+    # board.push_uci("e7e5")
+    # board.push_uci("d2d4")
+    # print(ChessGui.generateHistory(board))
     # print(ChessClock.formatTime(300))
     # print(ChessClock.formatTime(3725.5))
     # print(ChessClock.formatTime(12.1))
@@ -377,8 +404,8 @@ if __name__ == "__main__":
     
     # time.sleep(3)
     # print(clock.getRemainingTimes())
-    # c = ChessGui()
-    # c.start()
+    c = ChessGui()
+    c.start(True)
     # threading.Thread(target=c.start, args=()).start()
     # time.sleep(2)
     
