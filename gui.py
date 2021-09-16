@@ -210,7 +210,7 @@ class ChessGui:
         self.restartGameFlag = False
         self.doLayout(showDebugButtons)
         self.clock = ChessClock()
-        self.clock.setAttributes(300, 5)
+        self.clock.setAttributes(5400, 5)
         self.updateClock()
         self.root.mainloop()
         #pass #self.root.mainloop()
@@ -225,46 +225,47 @@ class ChessGui:
         style = ttk.Style(self.root)
         self.root.geometry("800x400")
         self.root.configure()
-        self.root.rowconfigure(0, weight=0)
-        self.root.columnconfigure(0, weight=1)
-        self.root.columnconfigure(2, weight=1)
         
         self.whiteRemaining = StringVar()
-        self.whiteClock = ttk.Label(self.root, font=("Arial", 48), background="white", textvariable=self.whiteRemaining)
-        self.whiteClock.grid(column=0, row=0, sticky=N, pady=10)
+        self.whiteClock = ttk.Label(self.root, font=("Arial", 36), background="white", textvariable=self.whiteRemaining)
+        self.whiteClock.grid(column=0, row=0, sticky=E, pady=2)
         
         
         self.blackRemaining = StringVar()
-        self.blackClock = ttk.Label(self.root, font=("Arial", 48), background="white", textvariable=self.blackRemaining)   
-        self.blackClock.grid(column=2, row=0, sticky=N, pady=10)
+        self.blackClock = ttk.Label(self.root, font=("Arial", 36), background="white", textvariable=self.blackRemaining)   
+        self.blackClock.grid(column=2, row=0, sticky=W, pady=2)
         
         if (showDebugButtons):
             self.whiteTurn = ttk.Button(self.root, text="White Finished", command=self.whiteButtonPressed)
-            self.whiteTurn.grid(column=0, row=1, sticky=N, pady=10)
+            self.whiteTurn.grid(column=0, row=10, sticky=N, pady=10)
             self.blackTurn = ttk.Button(self.root, text="Black Finished", command=self.blackButtonPressed)
-            self.blackTurn.grid(column=2, row=1, sticky=S, pady=10)
+            self.blackTurn.grid(column=3, row=10, sticky=NSEW, pady=10)
             self.undoButton = ttk.Button(self.root, text="Undo", command=self.undoButtonPress)
-            self.undoButton.grid(column=2, row=2, sticky=S, pady=10)
+            self.undoButton.grid(column=1, row=10, sticky=S, pady=10)
 
-        self.pauseButton = ttk.Button(self.root, text="Pause", command=self.togglePause)
-        self.pauseButton.grid(column=1, row=2, sticky=S, pady=10)
+        # self.pauseButton = ttk.Button(self.root, text="Pause", command=self.togglePause)
+        # self.pauseButton.grid(column=1, row=2, sticky=S, pady=10)
         
         self.historyFrame = ttk.LabelFrame(self.root, text="Turn history")
-        self.historyFrame.grid(column=0, row=2, sticky=NSEW)
+        self.historyFrame.grid(column=0, row=1, rowspan=1, sticky=NSEW)
         self.historyString=StringVar()
         self.history = ttk.Label(self.historyFrame, textvariable=self.historyString)
         self.history.grid(column=0, row=0)
-        self.root.rowconfigure(2, weight=3)
+        
+
+        self.engineFrame = ttk.LabelFrame(self.root, text="Engine Analysis")
+        self.engineFrame.grid(column=2, row=1, rowspan=1, sticky=NSEW)
+        self.engineString=StringVar()
+        self.engineLabel = ttk.Label(self.engineFrame, textvariable=self.engineFrame)
+        self.engineLabel.grid(column=0, row=0)
+        
 
         self.canvas = Canvas(self.root, width = 300, height = 300)  
-        self.canvas.grid(column=1,row=0, rowspan=3, sticky=N, pady=10)
+        self.canvas.grid(column=1,row=0, rowspan=2, columnspan=1, sticky=NSEW, pady=2, padx=2)
         #self.canvas.pack()  
         self.img = ImageTk.PhotoImage(Image.open("./assets/blank.png"))  
         self.imageContainer = self.canvas.create_image(0, 0, anchor=tk.NW, image=self.img) 
-        self.text = StringVar()
-        self.text.set("Update Text")
-        self.label= ttk.Label(self.root, font=("Arial"), textvariable=self.text)
-        self.label.grid(row=3, column=1)
+        
 
         menubar = tk.Menu(self.root)
         self.gameMenu = tk.Menu(menubar, tearoff=0)
@@ -272,6 +273,13 @@ class ChessGui:
         self.gameMenu.add_command(label="Pause", command=self.togglePause)
         menubar.add_cascade(label="Game", menu=self.gameMenu)
         self.root.config(menu=menubar)
+
+        
+        
+        # self.root.rowconfigure(2, weight=3)
+        self.root.rowconfigure(1, weight=3)
+        self.root.columnconfigure(0, weight=3)
+        self.root.columnconfigure(2, weight=3)
 
     def restartGame(self):
         self.restartGameFlag = True
@@ -340,7 +348,8 @@ class ChessGui:
         self.root.after(20, self.updateClock)
 
     def updateChessBoard(self, board : chess.Board):
-        self.text.set("Scoring...")
+        #self.text.set("Scoring...")
+        
         lastmove = None
         if len(board.move_stack) > 0:
             lastmove = board.peek()
@@ -354,13 +363,15 @@ class ChessGui:
         
         self.img = ImageTk.PhotoImage(pil_img)  
         self.canvas.itemconfig(self.imageContainer, image=self.img)
+        self.historyString.set(ChessGui.generateHistory(board))
         if board.is_valid():
             engine = Engine()
             score = engine.getScoreForPosition(board.fen())
-            self.text.set(str(score))
+            #self.text.set(str(score))
         else:
-            self.text.set("Invalid board")
-        self.historyString.set(ChessGui.generateHistory(board))
+            pass
+            #self.text.set("Invalid board")
+        
         #profiler.log(53, "Made image")
     
     def generateHistory(board:Board):
@@ -405,7 +416,7 @@ if __name__ == "__main__":
     # time.sleep(3)
     # print(clock.getRemainingTimes())
     c = ChessGui()
-    c.start(True)
+    c.start(False)
     # threading.Thread(target=c.start, args=()).start()
     # time.sleep(2)
     
