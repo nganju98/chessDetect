@@ -12,6 +12,7 @@ chess = "*"
 CairoSVG = "*"
 pygame = "*"
 stockfish = "*"
+tinydb = "*"
 
 [dev-packages]
 
