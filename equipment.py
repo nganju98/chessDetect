@@ -1,6 +1,11 @@
 from enum import Enum
 
 import chess
+
+
+CAMERA_WIDTH = 2048
+CAMERA_HEIGHT = 1536
+
 class Marker(Enum):
     BOARD_TOP_LEFT = 0
     BOARD_TOP_RIGHT = 1

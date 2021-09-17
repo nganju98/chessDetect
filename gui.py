@@ -1,8 +1,10 @@
 
+from functools import partial
 from board import Board
 import os
 import ctypes.util
 from tkinter.constants import ANCHOR, N, NSEW,S,E,W
+from camera import Camera
 
 def set_dll_search_path():
    # Python 3.8 no longer searches for DLLs in PATH, so we have to add
@@ -202,12 +204,13 @@ class ChessClock():
 
 class ChessGui:
     def __init__(self):
-        pass
+        self.cameras = Camera.listPorts()
 
         
     def start(self, showDebugButtons = False):
 
         self.restartGameFlag = False
+        self.changeCameraFlag = -1
         self.doLayout(showDebugButtons)
         self.clock = ChessClock()
         self.clock.setAttributes(5400, 5)
@@ -263,8 +266,9 @@ class ChessGui:
         self.canvas = Canvas(self.root, width = 300, height = 300)  
         self.canvas.grid(column=1,row=0, rowspan=2, columnspan=1, sticky=NSEW, pady=2, padx=2)
         #self.canvas.pack()  
-        self.img = ImageTk.PhotoImage(Image.open("./assets/blank.png"))  
-        self.imageContainer = self.canvas.create_image(0, 0, anchor=tk.NW, image=self.img) 
+        self.imageContainer = self.canvas.create_image(0, 0, anchor=tk.NW) 
+        self.updateChessBoard(chess.Board.empty())
+        #self.img = ImageTk.PhotoImage(Image.open("./assets/blank.png"))  
         
 
         menubar = tk.Menu(self.root)
@@ -272,6 +276,15 @@ class ChessGui:
         self.gameMenu.add_command(label="New Game", command=self.restartGame)
         self.gameMenu.add_command(label="Pause", command=self.togglePause)
         menubar.add_cascade(label="Game", menu=self.gameMenu)
+
+        self.cameraMenu = tk.Menu(menubar, tearoff=0)
+        
+        for camera in self.cameras:
+            handler = partial(self.changeCamera, camera.port)
+            self.cameraMenu.add_command(label=camera.description(), command=handler)
+        
+        menubar.add_cascade(label="Camera", menu=self.cameraMenu)
+
         self.root.config(menu=menubar)
 
         
@@ -280,6 +293,10 @@ class ChessGui:
         self.root.rowconfigure(1, weight=3)
         self.root.columnconfigure(0, weight=3)
         self.root.columnconfigure(2, weight=3)
+
+    def changeCamera(self, port):
+        print(f'changing camera to: {port}')
+        self.changeCameraFlag = port
 
     def restartGame(self):
         self.restartGameFlag = True

@@ -230,8 +230,17 @@ class Runner:
         recentCounts = BoardCountCache()
         lastCalibratedBoard = None
         gameState = GameState.PREGAME
+        handlers = {
+            GameState.PREGAME: self.pregame,
+            GameState.WAITING_FOR_TURN:self.waitingForTurn,
+            GameState.PROCESS_TURN : self.processTurn
+            }
         while True:
             profiler = Profiler()
+            if (self.gui.changeCameraFlag >=0):
+                cap = Camera(self.gui.changeCameraFlag)
+                self.gui.changeCameraFlag = -1
+                lastCalibratedBoard = None
             if self.gui.restartGameFlag:
                 gameState = GameState.PREGAME
                 recentCounts.clear()
@@ -244,12 +253,8 @@ class Runner:
             profiler.log(2, "Calibrated board")
             if board.calibrateSuccess:
                 lastCalibratedBoard = board
-                if gameState == GameState.PREGAME:
-                    gameState = self.pregame(frame, board, recentCounts, profiler)
-                elif gameState == GameState.WAITING_FOR_TURN:
-                    gameState = self.waitingForTurn(frame, board, recentCounts, profiler)
-                elif gameState == GameState.PROCESS_TURN:
-                    gameState = self.processTurn(frame, board, recentCounts, profiler)
+                handler = handlers[gameState]
+                gameState = handler(frame, board, recentCounts, profiler)
                 board.drawOrigSquares(frame.img, recentCounts, self.pieceSet, True)
                 profiler.log(4, "Drew squares")
             else:
