@@ -5,7 +5,7 @@ import os
 import ctypes.util
 from tkinter.constants import ANCHOR, N, NSEW,S,E,W
 from camera import Camera
-
+import datetime
 def set_dll_search_path():
    # Python 3.8 no longer searches for DLLs in PATH, so we have to add
    # everything in PATH manually. Note that unlike PATH add_dll_directory
@@ -34,6 +34,7 @@ from profiler import Profiler
 
 from PIL import ImageTk,Image  
 import chess
+import chess.engine
 import chess.svg
 from cairosvg import svg2png
 from io import BytesIO
@@ -199,13 +200,27 @@ class ChessClock():
         return retval
 
     
-
+class Variant():
+    def __init__(self, score, depth, pvNum, moves, board : Board):
+        self.score = score
+        self.depth = depth
+        self.pvNum = pvNum
+        self.moves = moves
+        self.board = board
+#self.score.relative.cp/100
+    def toString(self):
+        if (self.score.is_mate()):
+            score = f'M{self.score.relative.moves}'
+        else:
+            score = f'{self.score.relative.cp/100:+}'
+        retval = f'L{self.pvNum}({self.depth}): {score} {ChessGui.generateForward(self.board, self.moves)}'
+        return retval
 
 
 class ChessGui:
     def __init__(self):
-        self.cameras = Camera.listPorts()
-
+        self.cameras = [] # Camera.listPorts()
+        
         
     def start(self, showDebugButtons = False):
 
@@ -259,7 +274,7 @@ class ChessGui:
         self.engineFrame = ttk.LabelFrame(self.root, text="Engine Analysis")
         self.engineFrame.grid(column=2, row=1, rowspan=1, sticky=NSEW)
         self.engineString=StringVar()
-        self.engineLabel = ttk.Label(self.engineFrame, textvariable=self.engineFrame)
+        self.engineLabel = ttk.Label(self.engineFrame, textvariable=self.engineString, wraplength=270)
         self.engineLabel.grid(column=0, row=0)
         
 
@@ -366,7 +381,8 @@ class ChessGui:
 
     def updateChessBoard(self, board : chess.Board):
         #self.text.set("Scoring...")
-        
+        self.lastUpdated = datetime.datetime.now()
+        localUpdated = self.lastUpdated
         lastmove = None
         if len(board.move_stack) > 0:
             lastmove = board.peek()
@@ -381,14 +397,34 @@ class ChessGui:
         self.img = ImageTk.PhotoImage(pil_img)  
         self.canvas.itemconfig(self.imageContainer, image=self.img)
         self.historyString.set(ChessGui.generateHistory(board))
-        if board.is_valid():
-            engine = Engine()
-            score = engine.getScoreForPosition(board.fen())
-            #self.text.set(str(score))
-        else:
-            pass
-            #self.text.set("Invalid board")
-        
+        exe = "./bin/stockfish_14_x64_avx2.exe"
+        if os.name != 'nt':
+            exe = './bin/stockfish_14_x64_avx2'
+        engine = chess.engine.SimpleEngine.popen_uci(exe)
+        if (localUpdated == self.lastUpdated and board.is_valid()):
+            print(f'Starting engine on {board.fen()}')
+            with engine.analysis(board, multipv=3) as analysis:
+                pvs = {}
+                for info in analysis:
+                    if info.get("multipv") is not None:
+                        pvs[info.get("multipv")] = Variant(info.get("score"), info.get("depth"), info.get("multipv"), info.get("pv"), board)
+                        analysis = ""
+                        for key in sorted(pvs.keys()):
+                            analysis += pvs[key].toString() + "\n"
+                        self.engineString.set(analysis)
+                    #print(info.get("score"), info.get("depth"), info.get("multipv"))
+                    
+                    #print(info.get("pv"))
+                    #print("********************************")
+                    if info.get("depth", 0) > 20:
+                        print(f'Stopping for {board.fen()}, max depth reached')
+                        break
+                    if localUpdated != self.lastUpdated:
+                        print(f'Stopping for {board.fen()}, board was updated')
+                        break
+                #print("----------------------------------------------------")
+            engine.quit()
+
         #profiler.log(53, "Made image")
     
     def generateHistory(board:Board):
@@ -402,6 +438,26 @@ class ChessGui:
                 retval += f'{int(ctr/2) + 1}. {temp.san(move)}  '
             else:
                 retval += f'{temp.san(move)} \n'
+            #print(temp.san(move))
+            temp.push(move)
+        return retval
+
+    def generateForward(board:chess.Board, moves):
+        
+        temp = board.copy()
+        retval = ""
+        history = len(board.move_stack)
+        first = True
+        for ctr, move in enumerate(moves):
+            moveCtr = ctr + history
+            if moveCtr % 2 == 0:
+                retval += f'{int(moveCtr/2) + 1}.{temp.san(move)}  '
+                first = False
+            else:
+                if first:
+                    retval += f'{int(moveCtr/2) + 1}...'
+                    first = False
+                retval += f'{temp.san(move)} '
             #print(temp.san(move))
             temp.push(move)
         return retval

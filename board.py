@@ -1,4 +1,5 @@
 #from functools import cache
+import math
 import cv2
 import imutils
 from shapely import coords
@@ -15,6 +16,7 @@ from copy import deepcopy
 from camera import Frame
 from collections import deque
 from typing import Deque
+
 
 class BoardCount:
     def __init__(self, count, frameNumber, frameTime):
@@ -190,15 +192,19 @@ class Board:
         for (markerCorner, markerId) in zip(bboxs, idAry):
             if (markerId in self.pieceSet):
                 corners = markerCorner.reshape((4, 2))
-                
-                piece : Piece = self.pieceSet[markerId]
-                pixelLength = self.pixelsPerMm * (piece.diameterInMm / 2)
-                pieceCenter = BoardFinder.getPieceCenter(corners, pixelLength)
-                if draw:
-                    cv2.circle(frame.img, pieceCenter, 5, (0,255,0), 2)
-                    
-                pointList.append(pieceCenter)
-                validIds.append(markerId)
+                dist = math.hypot(corners[0][0] - corners[1][0], corners[0][1] - corners[1][1]) / self.pixelsPerMm
+                if (dist > 20):
+                    pass
+                    #print(f'Throwing out aruco with edge size {dist:.1f}mm, markerId={markerId}')
+                else:
+                    piece : Piece = self.pieceSet[markerId]
+                    pixelLength = self.pixelsPerMm * (piece.diameterInMm / 2)
+                    pieceCenter = BoardFinder.getPieceCenter(corners, pixelLength)
+                    if draw:
+                        cv2.circle(frame.img, pieceCenter, 5, (0,255,0), 2)
+                        
+                    pointList.append(pieceCenter)
+                    validIds.append(markerId)
 
         
         if (len(pointList)== 0):
