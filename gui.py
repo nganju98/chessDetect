@@ -183,6 +183,11 @@ class ChessClock():
     def gameFinished(self) -> bool:
         return self.whiteFinished() or self.blackFinished()
 
+    def reset(self):
+        self.started = False
+        self.paused = False
+        self.canUndo = False
+
     def formatTime(time : float):
         retval = "NOTHING"
         hours = int(time / 3600)
@@ -226,9 +231,10 @@ class ChessGui:
 
         self.restartGameFlag = False
         self.changeCameraFlag = -1
-        self.doLayout(showDebugButtons)
         self.clock = ChessClock()
-        self.clock.setAttributes(5400, 5)
+        self.clock.setAttributes(60*60, 5)
+        self.doLayout(showDebugButtons)
+        
         self.updateClock()
         self.root.mainloop()
         #pass #self.root.mainloop()
@@ -300,6 +306,13 @@ class ChessGui:
         
         menubar.add_cascade(label="Camera", menu=self.cameraMenu)
 
+        self.clockMenu = tk.Menu(menubar, tearoff=0)
+        self.clockMenu.add_command(label="Classical (60 | 0)", command=lambda: self.setClock(60 * 60,0))
+        self.clockMenu.add_command(label="Rapid (15 | 10)", command=lambda: self.setClock(15 * 60, 10))
+        self.clockMenu.add_command(label="Blitz (3 | 2)", command=lambda: self.setClock(3 * 60, 2))
+        self.clockMenu.add_command(label="Bullet (2 | 1)", command=lambda: self.setClock(2 * 60, 1))
+        menubar.add_cascade(label="Clock", menu=self.clockMenu)
+
         self.root.config(menu=menubar)
 
         
@@ -309,6 +322,10 @@ class ChessGui:
         self.root.columnconfigure(0, weight=3)
         self.root.columnconfigure(2, weight=3)
 
+    def setClock(self, timePerSide, increment):
+        print(f'Setting clock to {timePerSide} | {increment}')
+        self.clock.setAttributes(timePerSide, increment)
+    
     def changeCamera(self, port):
         print(f'changing camera to: {port}')
         self.changeCameraFlag = port
@@ -316,8 +333,7 @@ class ChessGui:
     def restartGame(self):
         self.restartGameFlag = True
         print("setting restartGame to true")
-        self.clock = ChessClock()
-        self.clock.setAttributes(300, 5)
+        self.clock.reset()
         self.updateClock()
         self.whiteClock.config(background="white")
         self.blackClock.config(background="white")
