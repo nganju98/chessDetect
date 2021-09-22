@@ -198,7 +198,7 @@ class Board:
                     #print(f'Throwing out aruco with edge size {dist:.1f}mm, markerId={markerId}')
                 else:
                     piece : Piece = self.pieceSet[markerId]
-                    pixelLength = self.pixelsPerMm * (piece.diameterInMm / 2)
+                    pixelLength = self.pixelsPerMm * ( (piece.diameterInMm / 2) + 1)
                     pieceCenter = BoardFinder.getPieceCenter(corners, pixelLength)
                     if draw:
                         cv2.circle(frame.img, pieceCenter, 5, (0,255,0), 2)
