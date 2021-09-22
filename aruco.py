@@ -7,21 +7,37 @@ import numpy.typing
 import equipment
 from equipment import Marker
 
-def getArucoVars():
+def getArucoDict():
     markerSize = 4
     totalMarkers = 50
     key = getattr(aruco, f'DICT_{markerSize}X{markerSize}_{totalMarkers}')
     arucoDict = aruco.Dictionary_get(key)
+    return arucoDict
+
+def getArucoVars():
+    
     arucoParam = aruco.DetectorParameters_create()
     #arucoParam.minMarkerPerimeterRate=.02
     ##arucoParam.maxErroneousBitsInBorderRate=.6
     #arucoParam.errorCorrectionRate=1
-    return arucoDict, arucoParam
+    return getArucoDict(), arucoParam
 
 
-def findArucoMarkers(img, draw=True):
+def getArucoVarsSmall():
+    
+    arucoParam = aruco.DetectorParameters_create()
+    ##arucoParam.adaptiveThreshWinSizeMin = 13
+    #arucoParam.adaptiveThreshWinSizeMax = 23
+    #arucoParam.minMarkerPerimeterRate=.03
+    #arucoParam.maxMarkerPerimeterRate=.06
+    ##arucoParam.maxErroneousBitsInBorderRate=.6
+    #arucoParam.errorCorrectionRate=1
+    return getArucoDict(), arucoParam
+
+
+def findArucoMarkers(img, draw=True, small = False):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    arucoDict, arucoParam = getArucoVars()
+    arucoDict, arucoParam = getArucoVarsSmall() if small else getArucoVars()
     bboxs, ids, rejected = aruco.detectMarkers(gray, arucoDict, parameters = arucoParam)
     #print(rejected)
     #print(ids)
@@ -29,7 +45,7 @@ def findArucoMarkers(img, draw=True):
         aruco.drawDetectedMarkers(img, bboxs, ids) 
     return (bboxs, ids)
 
-def findArucoMarkersInPolygon(img, polygon : Polygon, bufferInPixels, drawPolygon = False, drawMarkers = True):
+def findArucoMarkersInPolygon(img, polygon : Polygon, bufferInPixels, drawPolygon = False, drawMarkers = True, small = False):
 
     rect = [
         int(max(0, polygon.bounds[0] - bufferInPixels)), 
@@ -38,7 +54,7 @@ def findArucoMarkersInPolygon(img, polygon : Polygon, bufferInPixels, drawPolygo
         int(min(img.shape[0] - 1, polygon.bounds[3] + bufferInPixels))]
     xOffset = rect[0]
     yOffset = rect[1]
-    bboxs, ids = findArucoMarkers(img[rect[1]:rect[3], rect[0]:rect[2]], drawMarkers)
+    bboxs, ids = findArucoMarkers(img[rect[1]:rect[3], rect[0]:rect[2]], drawMarkers, small)
     for bbox in bboxs:
             for box in bbox:
                 for point in box:

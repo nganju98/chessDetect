@@ -178,7 +178,7 @@ class Board:
         if (self.corners is None or self.rect is None or self.pixelsPerMm is None or not self.calibrateSuccess):
             raise RuntimeError("Attempt to detect pieces but self.corners is None")
 
-        bboxs, ids = aruco.findArucoMarkersInPolygon(frame.img, Polygon(self.rect), self.pixelsPerMm * 5)
+        bboxs, ids = aruco.findArucoMarkersInPolygon(frame.img, Polygon(self.rect), self.pixelsPerMm * 5, small = True)
         
         profiler.log(82, "Detected arucos in board rectangle")
 
